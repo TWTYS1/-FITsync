@@ -1,0 +1,46 @@
+<view class="container">
+  <!-- Header -->
+  <view class="header">
+    <text class="brand">FitSync</text>
+    <text class="subtitle">专注每一次训练</text>
+  </view>
+
+  <!-- Today Stats -->
+  <view class="stats surface-elevated">
+    <view class="stat-item">
+      <text class="stat-value">{{todayCount}}</text>
+      <text class="stat-label">今日训练</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-value">{{todayVolume}}</text>
+      <text class="stat-label">总训练量 (kg)</text>
+    </view>
+  </view>
+
+  <!-- Main Action -->
+  <view class="actions">
+    <button class="btn-primary" bindtap="onStartTraining">
+      <text class="btn-icon">+</text>
+      <text>开始新训练</text>
+    </button>
+
+    <button
+      wx:if="{{activeSession}}"
+      class="btn-secondary"
+      bindtap="onContinueTraining"
+    >
+      <text>继续 {{activeSession.exerciseName}} · 第{{activeSession.currentSet}}组</text>
+    </button>
+  </view>
+
+  <!-- Today's Summary -->
+  <view class="today-section" wx:if="{{todayCount > 0}}">
+    <text class="section-title">今日已完成 {{todayCount}} 项训练</text>
+  </view>
+
+  <view class="today-section" wx:else>
+    <text class="section-title text-muted">今天还没有训练记录</text>
+    <text class="section-desc">点击上方按钮开始第一次训练</text>
+  </view>
+</view>

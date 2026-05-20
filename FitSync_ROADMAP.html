@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FitSync 开发路线图</title>
+  <style>
+    :root {
+      --bg: #050505;
+      --surface: #111111;
+      --surface-2: #181818;
+      --border: #262626;
+      --text: #f5f5f5;
+      --muted: #a3a3a3;
+      --soft: #737373;
+      --accent: #22c55e;
+      --accent-2: #86efac;
+      --amber: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Microsoft YaHei", sans-serif;
+      line-height: 1.65;
+    }
+
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    header {
+      min-height: 78vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 16px 0 18px;
+      max-width: 880px;
+      font-size: clamp(46px, 8vw, 96px);
+      line-height: 0.96;
+      letter-spacing: 0;
+    }
+
+    .hero-copy {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 20px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 36px;
+      max-width: 820px;
+    }
+
+    .metric {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .metric b {
+      display: block;
+      color: var(--accent-2);
+      font-size: 28px;
+      line-height: 1.1;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 8px;
+      color: var(--soft);
+      font-size: 13px;
+    }
+
+    section {
+      padding: 48px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      font-size: 30px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0 0 14px;
+      color: var(--muted);
+    }
+
+    .section-lead {
+      max-width: 760px;
+      font-size: 17px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .pill {
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      border-radius: 999px;
+      color: var(--accent-2);
+      background: rgba(34, 197, 94, 0.08);
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .card.done {
+      border-color: rgba(34, 197, 94, 0.42);
+      background: linear-gradient(180deg, rgba(34, 197, 94, 0.1), var(--surface));
+    }
+
+    .card.next {
+      border-color: rgba(245, 158, 11, 0.38);
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.1), var(--surface));
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 12px;
+      border-radius: 999px;
+      padding: 5px 10px;
+      color: #07140b;
+      background: var(--accent);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .tag.gray {
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+    }
+
+    .tag.amber {
+      color: #120b02;
+      background: var(--amber);
+    }
+
+    ul {
+      margin: 14px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+
+    li {
+      margin: 7px 0;
+    }
+
+    .timeline {
+      position: relative;
+      margin-top: 30px;
+      padding-left: 24px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 6px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: var(--border);
+    }
+
+    .phase {
+      position: relative;
+      margin-bottom: 22px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 18px 18px 18px 20px;
+    }
+
+    .phase::before {
+      content: "";
+      position: absolute;
+      left: -24px;
+      top: 23px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.12);
+    }
+
+    .phase.future::before {
+      background: var(--amber);
+      box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.12);
+    }
+
+    .phase small {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--accent);
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .phase.future small {
+      color: var(--amber);
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .step {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 14px;
+      min-height: 104px;
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--accent-2);
+      font-size: 14px;
+    }
+
+    .step span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .codebox {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #080808;
+      padding: 18px;
+      overflow: auto;
+      color: #d4d4d4;
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .checklist {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .check {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 13px 14px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .check::before {
+      content: "✓";
+      margin-right: 8px;
+      color: var(--accent);
+      font-weight: 900;
+    }
+
+    footer {
+      padding-top: 36px;
+      color: var(--soft);
+      font-size: 13px;
+    }
+
+    @media (max-width: 860px) {
+      .hero-grid,
+      .cards,
+      .split,
+      .flow,
+      .checklist {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        min-height: auto;
+        padding: 48px 0;
+      }
+
+      .page {
+        padding: 28px 16px 56px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="eyebrow">FitSync Roadmap / WeChat Mini Program</div>
+      <h1>防忘组、低打扰、训练中专注记录。</h1>
+      <p class="hero-copy">
+        FitSync 的方向不是做大而全健身 App，而是把力量训练里最容易被忽略的一件事做顺：
+        用户在力竭、出汗、走神时，也能快速记录每一组，并清楚知道下一步该做什么。
+      </p>
+      <div class="hero-grid">
+        <div class="metric">
+          <b>1</b>
+          <span>核心场景：无氧训练中记组</span>
+        </div>
+        <div class="metric">
+          <b>3</b>
+          <span>产品原则：防忘组 / 防误触 / 低打扰</span>
+        </div>
+        <div class="metric">
+          <b>5</b>
+          <span>训练分类：胸 / 肩 / 腿 / 背 / 腹</span>
+        </div>
+      </div>
+    </header>
+
+    <section>
+      <h2>产品定位</h2>
+      <p class="section-lead">
+        面向 18-40 岁无氧训练用户的轻量级训练记录工具。第一阶段不做饮食、课程、社区、AI 动作纠错或会员体系；
+        只聚焦训练中快速记组、清楚知道当前进度、减少误触和漏记。
+      </p>
+      <div class="pill-row">
+        <span class="pill">防忘组</span>
+        <span class="pill">防误触</span>
+        <span class="pill">低打扰</span>
+        <span class="pill">黑绿极简</span>
+        <span class="pill">原生微信小程序</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>当前状态</h2>
+      <p class="section-lead">
+        当前小程序已从 MVP 骨架推进到训练交互增强阶段。现有 Next.js demo 保留为参考，小程序工程独立位于
+        <strong>miniprogram/</strong>。
+      </p>
+      <div class="cards">
+        <article class="card done">
+          <span class="tag">Done</span>
+          <h3>MVP 骨架</h3>
+          <p>首页 / 训练 / 记录三 Tab，预置动作库，本地 storage，训练总结和记录页已经成型。</p>
+        </article>
+        <article class="card done">
+          <span class="tag">Done</span>
+          <h3>训练交互增强</h3>
+          <p>2 秒长按确认、3 秒撤销、休息结束轻震动、漏记提醒、自定义休息时间已经进入实现链路。</p>
+        </article>
+        <article class="card done">
+          <span class="tag">Done</span>
+          <h3>专注模式打磨</h3>
+          <p>开始前设置层、FIGHT 确认按钮、上一组信息面板、热身组不计正式组数等体验已明确。</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>核心训练链路</h2>
+      <p class="section-lead">
+        这一条链路是 FitSync 的产品生命线。后续功能都必须服务它，不能打断它。
+      </p>
+      <div class="flow">
+        <div class="step"><strong>首页</strong><span>看到今日状态，开始或继续训练。</span></div>
+        <div class="step"><strong>选动作</strong><span>按胸肩腿背腹快速选择预置动作。</span></div>
+        <div class="step"><strong>开始设置</strong><span>确认目标组数、休息时间和默认数据。</span></div>
+        <div class="step"><strong>专注训练</strong><span>大号 + 进入 Sheet，避免复杂入口。</span></div>
+        <div class="step"><strong>FIGHT!</strong><span>长按 2 秒确认，进度越满字越有力量。</span></div>
+        <div class="step"><strong>休息/总结</strong><span>自动倒计时，完成后生成本次记录。</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>开发路线</h2>
+      <div class="timeline">
+        <div class="phase">
+          <small>Phase 1 / Completed</small>
+          <h3>小程序 MVP 骨架</h3>
+          <p>搭建原生微信小程序目录，完成首页、训练、记录三 Tab；使用本地 storage 保存当前训练和历史记录。</p>
+          <ul>
+            <li>预置动作库：胸、肩、腿、背、腹。</li>
+            <li>训练主链路：选择动作、记录组数、休息、总结。</li>
+            <li>训练记录页：展示历史训练和每组明细。</li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <small>Phase 2 / Completed + Polish</small>
+          <h3>训练中交互增强</h3>
+          <p>围绕防误触和训练节奏做增强，但仍保持轻量。</p>
+          <ul>
+            <li>2 秒长按确认，按钮文案为 FIGHT!，随进度增加感叹号和字号。</li>
+            <li>记录后 3 秒撤销，撤销可恢复组数、停止休息。</li>
+            <li>休息结束轻震动 + 视觉提示，不做音效。</li>
+            <li>漏记提醒：训练页可记录状态停留 120 秒后提示补记。</li>
+            <li>开始设置层：训练前确认目标组数和休息时间。</li>
+            <li>上一组信息面板：点击展开查看完成时间和正式组进度。</li>
+          </ul>
+        </div>
+
+        <div class="phase next future">
+          <small>Phase 3 / Next</small>
+          <h3>动作内容与自定义能力</h3>
+          <p>让小程序从“可展示 demo”走向“可长期使用工具”。</p>
+          <ul>
+            <li>补全动作库：每个部位扩展到 6-10 个常见动作。</li>
+            <li>自定义动作：名称、部位、默认重量、默认次数、默认组数。</li>
+            <li>常用动作排序：优先展示最近使用和常用动作。</li>
+          </ul>
+        </div>
+
+        <div class="phase future">
+          <small>Phase 4 / Future</small>
+          <h3>总结卡与展示包装</h3>
+          <p>训练完成后给用户一点情绪反馈，但不强制社交分享。</p>
+          <ul>
+            <li>截图风格总结卡：组数、训练量、时长、完成时间。</li>
+            <li>克制文案：Quiet work counts too / Built in silence 等方向。</li>
+            <li>主题切换：黑绿主视觉 + 黑琥珀硬核模式。</li>
+            <li>Tab 图标：81x81 PNG，保持黑绿极简风格。</li>
+          </ul>
+        </div>
+
+        <div class="phase future">
+          <small>Phase 5 / Later</small>
+          <h3>云端与长期记录</h3>
+          <p>只有在核心训练流程稳定后，再考虑账号和云同步，避免过早复杂化。</p>
+          <ul>
+            <li>微信登录与云开发同步。</li>
+            <li>跨设备恢复训练记录。</li>
+            <li>周/月训练量趋势和动作进步趋势。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>架构尺度</h2>
+      <div class="split">
+        <div class="card">
+          <span class="tag">Keep</span>
+          <h3>坚持做小而完整</h3>
+          <ul>
+            <li>原生 JS + WXML + WXSS。</li>
+            <li>页面只保留首页、训练、记录。</li>
+            <li>storage 封装在 utils，不散落在页面。</li>
+            <li>训练计算逻辑放在 trainingSession.js。</li>
+            <li>新功能优先围绕训练主链路。</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="tag gray">Avoid</span>
+          <h3>暂时不要做重</h3>
+          <ul>
+            <li>不引入 Taro、TypeScript、状态库或 UI 库。</li>
+            <li>不做饮食、课程、社区和排行榜。</li>
+            <li>不做复杂训练计划生成。</li>
+            <li>不在训练中堆太多统计图。</li>
+            <li>不让用户每组都填复杂表单。</li>
+          </ul>
+        </div>
+      </div>
+      <pre class="codebox">miniprogram/
+  data/exercises.js           动作库
+  utils/storage.js            本地存储封装
+  utils/trainingSession.js    训练会话纯逻辑
+  pages/home/                 首页
+  pages/training/             训练主链路
+  pages/records/              记录列表</pre>
+    </section>
+
+    <section>
+      <h2>未来待办池</h2>
+      <div class="cards">
+        <article class="card next">
+          <span class="tag amber">Next</span>
+          <h3>动作库扩展</h3>
+          <p>保留五分类框架，先补全常用动作，再做自定义动作。</p>
+        </article>
+        <article class="card next">
+          <span class="tag amber">Next</span>
+          <h3>总结卡</h3>
+          <p>生成适合截图的训练总结，但不强制分享，不做社区化。</p>
+        </article>
+        <article class="card next">
+          <span class="tag amber">Next</span>
+          <h3>主题与图标</h3>
+          <p>黑绿为主，黑琥珀为硬核可选；补齐 Tab 81x81 PNG 图标。</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>验收清单</h2>
+      <p class="section-lead">
+        每次迭代都应该用微信开发者工具跑一遍下面的核心路径。
+      </p>
+      <div class="checklist">
+        <div class="check">首页能开始新训练，也能继续未完成训练。</div>
+        <div class="check">点击动作后先出现开始设置层。</div>
+        <div class="check">目标组数改为 3 后，完成 3 个正式组进入总结。</div>
+        <div class="check">热身组不推进正式组数，但保留在明细里。</div>
+        <div class="check">FIGHT! 短按不记录，长按 2 秒记录。</div>
+        <div class="check">FIGHT! 随进度增加感叹号和字号。</div>
+        <div class="check">记录后 3 秒内可以撤销。</div>
+        <div class="check">休息结束触发轻震动和视觉提示。</div>
+        <div class="check">训练页停留 120 秒后出现漏记提醒。</div>
+        <div class="check">上一组信息卡可展开查看完成时间。</div>
+      </div>
+    </section>
+
+    <footer>
+      <p>Generated for FitSync. Current workspace: D:\vibecoding\project2_fit</p>
+      <p>建议后续把这份路线图和 MVP_PLAN.md 一起作为 Claude Code / Codex 的开发上下文。</p>
+    </footer>
+  </main>
+</body>
+</html>

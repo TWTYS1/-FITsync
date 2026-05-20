@@ -1,0 +1,53 @@
+page {
+  --bg: #0a0a0a;
+  --fg: #fafafa;
+  --surface: #141414;
+  --surface-elevated: #1c1c1c;
+  --border: #262626;
+  --accent: #22c55e;
+  --accent-glow: #4ade80;
+  --muted: #737373;
+  --danger: #ef4444;
+
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Utility classes */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.text-muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.text-accent {
+  color: var(--accent);
+}
+
+.surface {
+  background: var(--surface);
+  border: 1rpx solid var(--border);
+  border-radius: 16rpx;
+}
+
+.surface-elevated {
+  background: var(--surface-elevated);
+  border: 1rpx solid var(--border);
+  border-radius: 16rpx;
+}

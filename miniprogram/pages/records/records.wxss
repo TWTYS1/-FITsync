@@ -1,0 +1,142 @@
+.container {
+  min-height: 100vh;
+  padding: 40rpx 28rpx;
+}
+
+.header {
+  margin-bottom: 40rpx;
+}
+
+.title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+}
+
+.subtitle {
+  display: block;
+  font-size: 26rpx;
+  color: var(--muted);
+  margin-top: 8rpx;
+}
+
+/* Empty */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 120rpx;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 24rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: var(--muted);
+}
+
+.empty-desc {
+  font-size: 24rpx;
+  color: var(--muted);
+  margin-top: 8rpx;
+}
+
+/* Record Card */
+.record-card {
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+}
+
+.record-header {
+  margin-bottom: 24rpx;
+}
+
+.record-title-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.record-exercise {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.record-category {
+  font-size: 22rpx;
+  color: var(--accent);
+  background: rgba(34, 197, 94, 0.1);
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+}
+
+.record-date {
+  margin-top: 8rpx;
+}
+
+.date-text {
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.record-stats {
+  display: flex;
+  gap: 40rpx;
+  padding-bottom: 24rpx;
+  border-bottom: 1rpx solid var(--border);
+  margin-bottom: 20rpx;
+}
+
+.record-stat {
+  text-align: center;
+}
+
+.rs-val {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.rs-label {
+  display: block;
+  font-size: 20rpx;
+  color: var(--muted);
+  margin-top: 2rpx;
+}
+
+.record-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.record-set-row {
+  display: flex;
+  align-items: center;
+  padding: 10rpx 16rpx;
+  background: var(--surface);
+  border-radius: 8rpx;
+}
+
+.rs-num {
+  font-size: 24rpx;
+  color: var(--muted);
+  width: 100rpx;
+}
+
+.rs-data {
+  flex: 1;
+  font-size: 26rpx;
+}
+
+.rs-warmup {
+  font-size: 20rpx;
+  color: var(--accent);
+  border: 1rpx solid var(--accent);
+  border-radius: 4rpx;
+  padding: 2rpx 10rpx;
+}

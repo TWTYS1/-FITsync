@@ -1,0 +1,299 @@
+<view class="container">
+  <!-- ==================== State: Categories ==================== -->
+  <view wx:if="{{state === 'categories'}}" class="categories-view">
+    <view class="view-header">
+      <text class="view-title">选择肌群</text>
+      <text class="view-desc">今天练哪儿？</text>
+    </view>
+
+    <view class="category-grid">
+      <view
+        wx:for="{{categories}}"
+        wx:key="key"
+        class="category-card surface-elevated"
+        data-key="{{item.key}}"
+        data-name="{{item.name}}"
+        bindtap="onTapCategory"
+      >
+        <text class="category-icon">{{item.name === '胸' ? '💪' : item.name === '肩' ? '🏋️' : item.name === '腿' ? '🦵' : item.name === '背' ? '🔗' : '🔥'}}</text>
+        <text class="category-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ==================== State: Exercises ==================== -->
+  <view wx:if="{{state === 'exercises'}}" class="exercises-view">
+    <view class="back-row" bindtap="onBackToCategories">
+      <text class="back-arrow">←</text>
+      <text>{{currentCategoryName}} · 选择动作</text>
+    </view>
+
+    <view class="exercise-list">
+      <view
+        wx:for="{{exercises}}"
+        wx:key="id"
+        class="exercise-card surface-elevated"
+        data-id="{{item.id}}"
+        bindtap="onTapExercise"
+      >
+        <view class="exercise-info">
+          <text class="exercise-name">{{item.name}}</text>
+          <text class="exercise-meta">{{item.targetSets}} 组 · {{item.defaultWeight}}kg · {{item.defaultReps}} 次</text>
+        </view>
+        <text class="exercise-arrow">→</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ==================== State: Training ==================== -->
+  <view wx:if="{{state === 'training'}}" class="training-view">
+    <view class="training-header">
+      <text class="training-exercise">{{session.exerciseName}}</text>
+      <text class="training-set-count">第 {{session.currentSet}} / {{session.targetSets}} 组</text>
+    </view>
+
+    <!-- Set Dots -->
+    <view class="set-dots">
+      <view
+        wx:for="{{setDots}}"
+        wx:key="index"
+        class="dot {{item.done ? 'dot-done' : ''}} {{item.current ? 'dot-current' : ''}}"
+      ></view>
+    </view>
+
+    <!-- Last Set Info Panel -->
+    <view
+      class="last-set-info {{lastSetPanelExpanded ? 'last-set-info-expanded' : ''}}"
+      bindtap="onToggleLastSetPanel"
+    >
+      <view class="last-set-top">
+        <text class="last-label">{{latestSet ? latestSetLabel : '默认数据'}}</text>
+        <text wx:if="{{latestSet}}" class="last-toggle">{{lastSetPanelExpanded ? '收起' : '详情'}}</text>
+      </view>
+      <text class="last-value">{{session.lastWeight}} kg × {{session.lastReps}} 次</text>
+
+      <view wx:if="{{lastSetPanelExpanded && latestSet}}" class="last-detail">
+        <view class="last-detail-row">
+          <text class="last-detail-label">完成时间</text>
+          <text class="last-detail-value">{{latestSetTimeText}}</text>
+        </view>
+        <view class="last-detail-row">
+          <text class="last-detail-label">本次进度</text>
+          <text class="last-detail-value">已完成 {{completedFormalSetCount}} / {{session.targetSets}} 正式组</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="rest-setting-row">
+      <text class="rest-setting-label">休息 {{restDurationSeconds}} 秒</text>
+      <picker
+        mode="selector"
+        range="{{restDurationOptions}}"
+        bindchange="onRestDurationChange"
+      >
+        <text class="rest-setting-action">调整</text>
+      </picker>
+    </view>
+
+    <!-- Big + Button -->
+    <view class="add-btn-wrapper">
+      <view
+        class="add-btn"
+        bindtap="onOpenSheet"
+        hover-class="add-btn-pressed"
+        hover-stay-time="80"
+      >
+        <text class="add-btn-text">+</text>
+      </view>
+      <text class="add-btn-label">记录第 {{session.currentSet}} 组</text>
+    </view>
+  </view>
+
+  <!-- ==================== State: Resting ==================== -->
+  <view wx:if="{{state === 'resting'}}" class="resting-view">
+    <view class="rest-header">
+      <text class="rest-exercise">{{session.exerciseName}}</text>
+      <text class="rest-set-done">{{latestSetLabel}}完成</text>
+    </view>
+
+    <!-- Circular Timer -->
+    <view class="rest-timer-circle">
+      <view class="timer-ring">
+        <view class="timer-progress" style="background: conic-gradient(var(--accent) {{restProgressDeg}}deg, transparent 0);">
+          <view class="timer-inner">
+            <text class="timer-seconds">{{restSeconds}}</text>
+            <text class="timer-unit">秒</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="rest-last-set">
+      <text class="rest-set-weight">{{latestSet.weight}} kg</text>
+      <text class="rest-set-reps">{{latestSet.reps}} 次</text>
+      <text wx:if="{{latestSet.isWarmup}}" class="warmup-tag">热身组</text>
+    </view>
+
+    <view class="rest-next">
+      <text>下一组：第 {{session.currentSet}} 组，{{session.lastWeight}} kg × {{session.lastReps}} 次</text>
+    </view>
+
+    <view class="rest-setting-row rest-setting-row-center">
+      <text class="rest-setting-label">本次休息 {{restDurationSeconds}} 秒</text>
+      <picker
+        mode="selector"
+        range="{{restDurationOptions}}"
+        bindchange="onRestDurationChange"
+      >
+        <text class="rest-setting-action">下次改为</text>
+      </picker>
+    </view>
+
+    <view class="rest-actions">
+      <button class="btn-skip-rest" bindtap="onSkipRest">跳过休息</button>
+    </view>
+  </view>
+
+  <!-- ==================== State: Summary ==================== -->
+  <view wx:if="{{state === 'summary'}}" class="summary-view">
+    <view class="summary-icon">✓</view>
+    <text class="summary-title">训练完成</text>
+    <text class="summary-exercise">{{summary.exerciseName}}</text>
+
+    <view class="summary-stats">
+      <view class="summary-stat">
+        <text class="s-val">{{summary.totalSets}}</text>
+        <text class="s-label">完成组数</text>
+      </view>
+      <view class="summary-stat">
+        <text class="s-val">{{summary.totalVolume}}</text>
+        <text class="s-label">总训练量 (kg)</text>
+      </view>
+    </view>
+
+    <!-- Set Details -->
+    <view class="summary-sets">
+      <text class="summary-sets-title">每组明细</text>
+      <view
+        wx:for="{{summary.sets}}"
+        wx:key="setNumber"
+        class="summary-set-row"
+      >
+        <text class="ss-num">{{item.setLabel}}</text>
+        <text class="ss-data">{{item.weight}} kg × {{item.reps}} 次</text>
+        <text wx:if="{{item.isWarmup}}" class="ss-warmup">热身</text>
+      </view>
+    </view>
+
+    <button class="btn-finish" bindtap="onFinishSummary">完成</button>
+  </view>
+
+  <!-- ==================== Start Settings Sheet ==================== -->
+  <view wx:if="{{showStartSheet && startExercise}}" class="sheet-overlay" bindtap="onCloseStartSheet"></view>
+  <view wx:if="{{showStartSheet && startExercise}}" class="sheet sheet-open start-sheet">
+    <view class="sheet-handle"></view>
+    <text class="sheet-title">{{startExercise.name}}</text>
+    <text class="start-subtitle">{{startExercise.defaultWeight}} kg · {{startExercise.defaultReps}} 次</text>
+
+    <view class="sheet-row">
+      <text class="sheet-label">目标组数</text>
+      <view class="sheet-stepper">
+        <view class="step-btn" bindtap="onStartSetsMinus">− 1</view>
+        <text class="start-step-value">{{startTargetSets}}</text>
+        <view class="step-btn step-plus" bindtap="onStartSetsPlus">+ 1</view>
+      </view>
+    </view>
+
+    <view class="sheet-row">
+      <text class="sheet-label">休息时间</text>
+      <picker
+        mode="selector"
+        range="{{restDurationOptions}}"
+        bindchange="onStartRestDurationChange"
+      >
+        <text class="start-picker-value">{{startRestDurationSeconds}} 秒</text>
+      </picker>
+    </view>
+
+    <button class="btn-start-training" bindtap="onConfirmStartTraining">开始训练</button>
+  </view>
+
+  <!-- ==================== Bottom Sheet (always mounted) ==================== -->
+  <view wx:if="{{showSheet && session}}" class="sheet-overlay" bindtap="onCloseSheet"></view>
+  <view wx:if="{{showSheet && session}}" class="sheet sheet-open">
+    <view class="sheet-handle"></view>
+    <text class="sheet-title">第 {{session.currentSet}} 组</text>
+
+    <view class="sheet-row">
+      <text class="sheet-label">重量 (kg)</text>
+      <view class="sheet-stepper">
+        <view class="step-btn" bindtap="onSheetWeightMinus">− 2.5</view>
+        <input
+          class="step-input"
+          type="digit"
+          value="{{sheetWeightText}}"
+          bindinput="onSheetWeightInput"
+          bindblur="onSheetWeightBlur"
+          confirm-type="done"
+        />
+        <view class="step-btn step-plus" bindtap="onSheetWeightPlus">+ 2.5</view>
+      </view>
+    </view>
+
+    <view class="sheet-row">
+      <text class="sheet-label">次数</text>
+      <view class="sheet-stepper">
+        <view class="step-btn" bindtap="onSheetRepsMinus">− 1</view>
+        <input
+          class="step-input step-input-reps"
+          type="number"
+          value="{{sheetRepsText}}"
+          bindinput="onSheetRepsInput"
+          bindblur="onSheetRepsBlur"
+          confirm-type="done"
+        />
+        <view class="step-btn step-plus" bindtap="onSheetRepsPlus">+ 1</view>
+      </view>
+    </view>
+
+    <view class="sheet-row">
+      <text class="sheet-label">热身组</text>
+      <switch
+        checked="{{sheetIsWarmup}}"
+        bindchange="onToggleWarmup"
+        color="#22c55e"
+      />
+    </view>
+
+    <view
+      class="btn-confirm {{confirmHolding ? 'btn-confirm-holding' : ''}}"
+      bindtouchstart="onConfirmTouchStart"
+      bindtouchend="onConfirmTouchEnd"
+      bindtouchcancel="onConfirmTouchEnd"
+    >
+      <view class="confirm-progress" style="width: {{confirmProgress}}%;"></view>
+      <text class="confirm-text" style="font-size: {{confirmFontSize}}rpx;">{{confirmHint}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{undoToast}}" class="undo-toast surface-elevated">
+    <view>
+      <text class="undo-title">已记录 {{undoToast.setLabel}}</text>
+      <text class="undo-desc">{{undoToast.seconds}} 秒内可撤销</text>
+    </view>
+    <button class="undo-action" bindtap="onUndoSet">撤销</button>
+  </view>
+
+  <view wx:if="{{restFinishedHint}}" class="rest-finished-hint surface-elevated">
+    <text>休息结束，准备下一组</text>
+  </view>
+
+  <view wx:if="{{missedSetPrompt}}" class="missed-prompt surface-elevated">
+    <text class="missed-title">是不是漏记了一组？</text>
+    <text class="missed-desc">如果刚刚练完，可以直接补记。</text>
+    <view class="missed-actions">
+      <button class="missed-btn missed-primary" bindtap="onMissedSetRecord">补记一组</button>
+      <button class="missed-btn" bindtap="onMissedSetIgnore">忽略</button>
+    </view>
+  </view>
+</view>

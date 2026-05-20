@@ -1,0 +1,55 @@
+<view class="container">
+  <view class="header">
+    <text class="title">训练记录</text>
+    <text class="subtitle">{{records.length}} 条记录</text>
+  </view>
+
+  <!-- Empty State -->
+  <view wx:if="{{records.length === 0}}" class="empty-state">
+    <text class="empty-icon">📋</text>
+    <text class="empty-text">还没有训练记录</text>
+    <text class="empty-desc">完成一次训练后，记录会出现在这里</text>
+  </view>
+
+  <!-- Records List -->
+  <view wx:for="{{records}}" wx:key="id" class="record-card surface-elevated">
+    <view class="record-header">
+      <view class="record-title-row">
+        <text class="record-exercise">{{item.exerciseName}}</text>
+        <text class="record-category">{{item.categoryName}}</text>
+      </view>
+      <view class="record-date">
+        <text class="date-text">{{item.dateStr}} {{item.timeStr}}</text>
+      </view>
+    </view>
+
+    <view class="record-stats">
+      <view class="record-stat">
+        <text class="rs-val">{{item.totalSets}}</text>
+        <text class="rs-label">组</text>
+      </view>
+      <view class="record-stat">
+        <text class="rs-val">{{item.totalVolume}}</text>
+        <text class="rs-label">kg 总量</text>
+      </view>
+      <view class="record-stat">
+        <text class="rs-val">{{item.duration}}</text>
+        <text class="rs-label">分钟</text>
+      </view>
+    </view>
+
+    <!-- Set Details (collapsed by default) -->
+    <view class="record-sets">
+      <view
+        wx:for="{{item.sets}}"
+        wx:key="setNumber"
+        wx:for-item="s"
+        class="record-set-row"
+      >
+        <text class="rs-num">{{s.setLabel}}</text>
+        <text class="rs-data">{{s.weight}} kg × {{s.reps}} 次</text>
+        <text wx:if="{{s.isWarmup}}" class="rs-warmup">热身</text>
+      </view>
+    </view>
+  </view>
+</view>
