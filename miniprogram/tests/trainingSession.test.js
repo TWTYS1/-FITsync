@@ -209,4 +209,78 @@ withMockedNow([1000], function () {
   assert.strictEqual(session.exerciseSource, 'custom');
 });
 
+/* ================================================================
+ * Daily summary aggregation tests
+ * ================================================================ */
+
+const {
+  buildDailySummary
+} = require('../utils/dailySummary');
+
+var targetDay = new Date(2026, 4, 21, 12, 0, 0).getTime();
+var otherDay = new Date(2026, 4, 20, 12, 0, 0).getTime();
+var todayRecords = [
+  {
+    id: 'bench',
+    exerciseName: '杠铃卧推',
+    categoryName: '胸',
+    startedAt: new Date(2026, 4, 21, 19, 0, 0).getTime(),
+    completedAt: new Date(2026, 4, 21, 19, 25, 0).getTime(),
+    sets: [
+      { weight: 40, reps: 10, isWarmup: true },
+      { weight: 60, reps: 8, isWarmup: false },
+      { weight: 62.5, reps: 8, isWarmup: false }
+    ]
+  },
+  {
+    id: 'row',
+    exerciseName: '坐姿划船',
+    categoryName: '背',
+    startedAt: new Date(2026, 4, 21, 19, 35, 0).getTime(),
+    completedAt: new Date(2026, 4, 21, 20, 10, 0).getTime(),
+    sets: [
+      { weight: 50, reps: 10, isWarmup: false },
+      { weight: 55, reps: 10, isWarmup: false }
+    ]
+  },
+  {
+    id: 'yesterday',
+    exerciseName: '杠铃深蹲',
+    categoryName: '腿',
+    startedAt: otherDay,
+    completedAt: otherDay + 30 * 60000,
+    sets: [
+      { weight: 100, reps: 5, isWarmup: false }
+    ]
+  }
+];
+
+var daily = buildDailySummary(todayRecords, targetDay);
+assert.strictEqual(daily.dateKey, '2026-05-21', 'daily summary should use local date key');
+assert.strictEqual(daily.records.length, 2, 'daily summary should include only target day records');
+assert.strictEqual(daily.exerciseCount, 2, 'daily summary should count unique exercises');
+assert.deepStrictEqual(daily.categoryNames, ['胸', '背'], 'daily summary should keep category order by first appearance');
+assert.strictEqual(daily.totalSets, 4, 'daily summary should count formal sets only');
+assert.strictEqual(daily.totalVolume, 2030, 'daily summary should exclude warmup volume');
+assert.strictEqual(daily.totalDurationMinutes, 60, 'daily summary should sum per-record durations');
+assert.strictEqual(daily.startedAt, new Date(2026, 4, 21, 19, 0, 0).getTime());
+assert.strictEqual(daily.completedAt, new Date(2026, 4, 21, 20, 10, 0).getTime());
+assert.strictEqual(daily.historyGrid28Days.length, 28, 'history grid should cover 28 days');
+assert.strictEqual(daily.historyGrid28Days[26].active, true, 'previous training day should be active');
+assert.strictEqual(daily.historyGrid28Days[27].active, true, 'target day should be active');
+
+/* ================================================================
+ * Training page regression tests
+ * ================================================================ */
+
+const fs = require('fs');
+const path = require('path');
+const trainingPageSource = fs.readFileSync(path.join(__dirname, '../pages/training/training.js'), 'utf8');
+const finishSummaryMatch = trainingPageSource.match(/onFinishSummary\(\) \{[\s\S]*?\n  \},/);
+assert.ok(finishSummaryMatch, 'training page should define onFinishSummary');
+assert.ok(
+  /undoToast:\s*null/.test(finishSummaryMatch[0]),
+  'leaving summary to continue training should clear undo toast state'
+);
+
 console.log('all tests passed');

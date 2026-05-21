@@ -1,8 +1,11 @@
 const { getRecords } = require('../../utils/storage');
+const { buildDailySummary } = require('../../utils/dailySummary');
 
 Page({
   data: {
-    records: []
+    records: [],
+    todaySummary: null,
+    hasTodaySummary: false
   },
 
   onShow() {
@@ -11,7 +14,10 @@ Page({
 
   refresh() {
     const records = getRecords();
+    const todaySummary = buildDailySummary(records, Date.now());
     this.setData({
+      todaySummary,
+      hasTodaySummary: todaySummary.records.length > 0,
       records: records.map((r) => ({
         ...r,
         duration: r.startedAt && r.completedAt
@@ -25,6 +31,13 @@ Page({
           setLabel: s.isWarmup ? '热身组' : `第 ${s.formalSetNumber || s.setNumber} 组`
         }))
       }))
+    });
+  },
+
+  onOpenTodaySummary() {
+    if (!this.data.hasTodaySummary) return;
+    wx.navigateTo({
+      url: '/pages/daily-summary/daily-summary?date=' + this.data.todaySummary.dateKey
     });
   },
 

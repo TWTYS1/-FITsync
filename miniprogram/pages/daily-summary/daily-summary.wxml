@@ -1,0 +1,78 @@
+<view class="container">
+  <view class="summary-shell">
+    <view class="carbon-card">
+      <view class="card-header">
+        <view class="session-block">
+          <text class="session-label">DAY.<text class="accent">{{dayNumberText}}</text></text>
+          <text class="focus-text">{{focusText}}</text>
+        </view>
+        <view class="date-block">
+          <text class="date-text">{{summary.date}}</text>
+          <text class="weekday-text">{{summary.weekday}}</text>
+        </view>
+      </view>
+
+      <view wx:if="{{hasRecords}}" class="metrics-grid">
+        <view class="metric metric-primary">
+          <text class="metric-label">VOLUME(KG)</text>
+          <text class="metric-value accent">{{summary.totalVolume}}</text>
+        </view>
+        <view class="metric">
+          <text class="metric-label">TIME(MIN)</text>
+          <text class="metric-value">{{summary.totalDurationMinutes}}</text>
+        </view>
+        <view class="metric metric-wide">
+          <text class="metric-label">TOTAL SETS</text>
+          <text class="metric-value">{{summary.totalSets}}</text>
+        </view>
+      </view>
+
+      <view wx:else class="empty-card">
+        <text class="empty-title">NO TRAINING</text>
+        <text class="empty-desc">今天还没有训练记录</text>
+      </view>
+
+      <view class="activity-section">
+        <text class="activity-label">ACTIVITY (LAST 28 DAYS)</text>
+        <view class="activity-grid">
+          <view
+            wx:for="{{summary.historyGrid28Days}}"
+            wx:key="dateKey"
+            class="activity-cell {{item.active ? 'activity-cell-active' : ''}}"
+          ></view>
+        </view>
+      </view>
+
+      <view wx:if="{{hasRecords}}" class="exercise-section">
+        <view
+          wx:for="{{recordRows}}"
+          wx:key="id"
+          class="exercise-row"
+        >
+          <view class="exercise-copy">
+            <text class="exercise-name">{{item.name}}</text>
+            <text class="exercise-category">{{item.category}}</text>
+          </view>
+          <text class="exercise-data">{{item.sets}} SETS · {{item.volume}} KG</text>
+        </view>
+      </view>
+
+      <view class="card-footer">
+        <view class="footer-copy">
+          <text>QUIET WORK</text>
+          <text>COUNTS TOO</text>
+        </view>
+        <view class="brand">
+          <text class="brand-mark">FS</text>
+          <text class="brand-text">FitSync</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="hint-row">
+      <text>截图保存这张今日训练卡</text>
+    </view>
+  </view>
+
+  <button class="back-btn" bindtap="onBack">返回</button>
+</view>

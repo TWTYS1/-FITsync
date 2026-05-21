@@ -3,7 +3,8 @@
     "pages/home/home",
     "pages/training/training",
     "pages/records/records",
-    "pages/exercise-form/exercise-form"
+    "pages/exercise-form/exercise-form",
+    "pages/daily-summary/daily-summary"
   ],
   "tabBar": {
     "color": "#525252",

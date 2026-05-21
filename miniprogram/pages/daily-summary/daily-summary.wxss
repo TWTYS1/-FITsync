@@ -1,0 +1,241 @@
+.container {
+  min-height: 100vh;
+  padding: 32rpx 28rpx 56rpx;
+  background: #0a0a0a;
+  box-sizing: border-box;
+}
+
+.summary-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.carbon-card {
+  width: 100%;
+  max-width: 680rpx;
+  min-height: 850rpx;
+  box-sizing: border-box;
+  padding: 48rpx;
+  border: 1rpx solid #27272a;
+  background: #09090b;
+  color: #d4d4d8;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.card-header,
+.card-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.session-block,
+.date-block,
+.footer-copy,
+.brand,
+.metric,
+.exercise-copy {
+  display: flex;
+  flex-direction: column;
+}
+
+.date-block,
+.brand {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.session-label,
+.date-text,
+.weekday-text,
+.metric-label,
+.activity-label,
+.exercise-data,
+.footer-copy {
+  font-family: Menlo, Monaco, Consolas, monospace;
+  letter-spacing: 0.12em;
+}
+
+.session-label,
+.date-text {
+  font-size: 22rpx;
+  color: rgba(212, 212, 216, 0.62);
+}
+
+.focus-text {
+  margin-top: 10rpx;
+  font-size: 34rpx;
+  line-height: 1.15;
+  font-weight: 800;
+  color: #f4f4f5;
+}
+
+.weekday-text {
+  margin-top: 4rpx;
+  font-size: 18rpx;
+  color: rgba(212, 212, 216, 0.38);
+}
+
+.accent {
+  color: #00ff66;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 44rpx 28rpx;
+}
+
+.metric-wide {
+  grid-column: span 2;
+}
+
+.metric-label {
+  margin-bottom: 8rpx;
+  font-size: 18rpx;
+  color: rgba(212, 212, 216, 0.48);
+}
+
+.metric-value {
+  font-size: 72rpx;
+  line-height: 0.95;
+  font-weight: 900;
+  letter-spacing: 0;
+  color: #f4f4f5;
+}
+
+.empty-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  padding: 56rpx 0;
+}
+
+.empty-title {
+  font-size: 48rpx;
+  font-weight: 900;
+  color: #00ff66;
+}
+
+.empty-desc {
+  font-size: 24rpx;
+  color: rgba(212, 212, 216, 0.5);
+}
+
+.activity-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.activity-label {
+  font-size: 16rpx;
+  color: rgba(212, 212, 216, 0.42);
+}
+
+.activity-grid {
+  display: flex;
+  gap: 6rpx;
+  width: 100%;
+}
+
+.activity-cell {
+  flex: 1;
+  height: 18rpx;
+  border-radius: 2rpx;
+  background: rgba(63, 63, 70, 0.55);
+}
+
+.activity-cell-active {
+  background: #00ff66;
+  box-shadow: 0 0 12rpx rgba(0, 255, 102, 0.45);
+}
+
+.exercise-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  max-height: 170rpx;
+  overflow: hidden;
+}
+
+.exercise-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding-bottom: 12rpx;
+  border-bottom: 1rpx solid rgba(63, 63, 70, 0.45);
+}
+
+.exercise-name {
+  max-width: 300rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #f4f4f5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exercise-category {
+  margin-top: 2rpx;
+  font-size: 18rpx;
+  color: rgba(212, 212, 216, 0.42);
+}
+
+.exercise-data {
+  flex-shrink: 0;
+  font-size: 18rpx;
+  color: rgba(212, 212, 216, 0.56);
+}
+
+.footer-copy {
+  gap: 2rpx;
+  font-size: 16rpx;
+  color: rgba(212, 212, 216, 0.45);
+}
+
+.brand-mark {
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 44rpx;
+  border: 1rpx solid rgba(0, 255, 102, 0.7);
+  color: #00ff66;
+  text-align: center;
+  font-size: 18rpx;
+  font-weight: 900;
+}
+
+.brand-text {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: rgba(244, 244, 245, 0.7);
+}
+
+.hint-row {
+  margin-top: 24rpx;
+  font-size: 22rpx;
+  color: rgba(212, 212, 216, 0.46);
+}
+
+.back-btn {
+  margin-top: 40rpx;
+  height: 88rpx;
+  border-radius: 14rpx;
+  background: #00ff66;
+  color: #07130b;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.back-btn::after {
+  border: 0;
+}

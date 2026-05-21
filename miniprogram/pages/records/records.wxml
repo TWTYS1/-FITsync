@@ -4,6 +4,18 @@
     <text class="subtitle">{{records.length}} 条记录</text>
   </view>
 
+  <view wx:if="{{hasTodaySummary}}" class="daily-entry surface-elevated" bindtap="onOpenTodaySummary">
+    <view class="daily-copy">
+      <text class="daily-label">今日总结</text>
+      <text class="daily-title">{{todaySummary.exerciseCount}} 个动作 · {{todaySummary.totalSets}} 组</text>
+      <text class="daily-meta">{{todaySummary.totalVolume}} kg · {{todaySummary.totalDurationMinutes}} 分钟</text>
+    </view>
+    <view class="daily-action">
+      <text>查看今日卡</text>
+      <text class="daily-arrow">→</text>
+    </view>
+  </view>
+
   <!-- Empty State -->
   <view wx:if="{{records.length === 0}}" class="empty-state">
     <text class="empty-icon">📋</text>

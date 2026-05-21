@@ -22,6 +22,9 @@ const {
   saveRestDurationSeconds,
   getCustomExercises
 } = require('../../utils/storage');
+const {
+  buildDailySummary
+} = require('../../utils/dailySummary');
 
 const CONFIRM_HOLD_MS = 1500;
 const UNDO_TOAST_SECONDS = 3;
@@ -40,6 +43,8 @@ Page({
     exercises: [],
     frequentExercises: [],
     customExercises: [],
+    todaySummary: null,
+    hasTodaySummary: false,
 
     // Start settings sheet
     showStartSheet: false,
@@ -139,6 +144,7 @@ Page({
     const customExercises = getCustomExercises();
     this.setData({ customExercises });
     this.refreshExercises(this.data.activeCategory);
+    this.refreshTodaySummary();
   },
 
   onHide() {
@@ -167,7 +173,21 @@ Page({
     });
     const records = getRecords();
     const frequent = getFrequentExercises(category, records, this.data.customExercises);
-    this.setData({ exercises: annotated, frequentExercises: frequent });
+    const todaySummary = buildDailySummary(records, Date.now());
+    this.setData({
+      exercises: annotated,
+      frequentExercises: frequent,
+      todaySummary,
+      hasTodaySummary: todaySummary.records.length > 0
+    });
+  },
+
+  refreshTodaySummary() {
+    const todaySummary = buildDailySummary(getRecords(), Date.now());
+    this.setData({
+      todaySummary,
+      hasTodaySummary: todaySummary.records.length > 0
+    });
   },
 
   onTapCategoryTab(e) {
@@ -259,6 +279,16 @@ Page({
   onAddCustomExercise() {
     wx.navigateTo({
       url: '/pages/exercise-form/exercise-form?category=' + this.data.activeCategory
+    });
+  },
+
+  onOpenTodaySummary() {
+    const summary = this.data.todaySummary || buildDailySummary(getRecords(), Date.now());
+    if (!summary.records.length) return;
+    this.stopUndoToast();
+    this.setData({ undoToast: null });
+    wx.navigateTo({
+      url: '/pages/daily-summary/daily-summary?date=' + summary.dateKey
     });
   },
 
@@ -593,10 +623,13 @@ Page({
       saveRecord(record);
       clearSession();
       this.startUndoToast(latestSet);
+      const todaySummary = buildDailySummary(getRecords(), Date.now());
 
       this.setData({
         state: 'summary',
         summary: this.decorateRecord(record),
+        todaySummary,
+        hasTodaySummary: todaySummary.records.length > 0,
         restSeconds: 0,
         restProgressDeg: 0
       });
@@ -622,6 +655,7 @@ Page({
     }
     const updated = undoSets(this.data.session);
     const latestSet = this.getLatestSet(updated);
+    const todaySummary = buildDailySummary(getRecords(), Date.now());
     this.stopUndoToast();
     this.setData({
       session: updated,
@@ -636,7 +670,9 @@ Page({
       restFinishedHint: false,
       missedSetPrompt: false,
       undoToast: null,
-      summary: null
+      summary: null,
+      todaySummary,
+      hasTodaySummary: todaySummary.records.length > 0
     });
     this.stopRestTimer();
     this.clearRestFinishedHint();
@@ -812,9 +848,14 @@ Page({
       latestSetLabel: '',
       latestSetTimeText: '',
       completedFormalSetCount: 0,
-      lastSetPanelExpanded: false
+      lastSetPanelExpanded: false,
+      undoToast: null
     });
     this.refreshExercises(this.data.activeCategory);
+  },
+
+  onContinueAfterSummary() {
+    this.onFinishSummary();
   },
 
   decorateRecord(record) {
