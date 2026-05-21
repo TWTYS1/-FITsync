@@ -6,7 +6,8 @@
 const KEYS = {
   CURRENT_SESSION: 'current_session',
   TRAINING_RECORDS: 'training_records',
-  REST_DURATION_SECONDS: 'rest_duration_seconds'
+  REST_DURATION_SECONDS: 'rest_duration_seconds',
+  CUSTOM_EXERCISES: 'custom_exercises'
 };
 
 const DEFAULT_REST_DURATION_SECONDS = 90;
@@ -84,6 +85,37 @@ function saveRestDurationSeconds(seconds) {
   return normalized;
 }
 
+/* ================================================================
+ * 自定义动作 CRUD
+ * ================================================================ */
+
+function getCustomExercises() {
+  return wx.getStorageSync(KEYS.CUSTOM_EXERCISES) || [];
+}
+
+function saveCustomExercise(exercise) {
+  const exercises = getCustomExercises();
+  const id = 'custom_' + Date.now();
+  const newExercise = Object.assign({}, exercise, { id: id, source: 'custom' });
+  exercises.push(newExercise);
+  wx.setStorageSync(KEYS.CUSTOM_EXERCISES, exercises);
+  return newExercise;
+}
+
+function updateCustomExercise(id, updates) {
+  const exercises = getCustomExercises();
+  const index = exercises.findIndex(function (e) { return e.id === id; });
+  if (index === -1) return null;
+  exercises[index] = Object.assign({}, exercises[index], updates);
+  wx.setStorageSync(KEYS.CUSTOM_EXERCISES, exercises);
+  return exercises[index];
+}
+
+function deleteCustomExercise(id) {
+  const exercises = getCustomExercises().filter(function (e) { return e.id !== id; });
+  wx.setStorageSync(KEYS.CUSTOM_EXERCISES, exercises);
+}
+
 module.exports = {
   saveSession,
   getSession,
@@ -93,5 +125,9 @@ module.exports = {
   removeRecord,
   getTodayRecords,
   getRestDurationSeconds,
-  saveRestDurationSeconds
+  saveRestDurationSeconds,
+  getCustomExercises,
+  saveCustomExercise,
+  updateCustomExercise,
+  deleteCustomExercise
 };

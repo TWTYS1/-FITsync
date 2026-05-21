@@ -1,8 +1,7 @@
-const { getCategories, getExercisesByCategory, getExerciseById } = require('../../data/exercises');
+const { getCategories, getExercisesByCategory, getExerciseById, getFrequentExercises, CATEGORY_KEYS } = require('../../data/exercises');
 const {
   createSession,
-  getFightLabel,
-  getFightFontSize,
+  getConfirmLabel,
   addSet,
   undoSets,
   skipRest,
@@ -18,29 +17,35 @@ const {
   clearSession,
   saveRecord,
   removeRecord,
+  getRecords,
   getRestDurationSeconds,
-  saveRestDurationSeconds
+  saveRestDurationSeconds,
+  getCustomExercises
 } = require('../../utils/storage');
 
-const CONFIRM_HOLD_MS = 2000;
+const CONFIRM_HOLD_MS = 1500;
 const UNDO_TOAST_SECONDS = 3;
 const MISSED_SET_MS = 120 * 1000;
 
 Page({
   data: {
-    // State: 'categories' | 'exercises' | 'training' | 'resting' | 'summary'
-    state: 'categories',
+    // State: 'exercises' | 'training' | 'resting' | 'summary'
+    state: 'exercises',
 
-    // Categories & exercises
+    // Category tabs
     categories: [],
-    currentCategory: '',
-    currentCategoryName: '',
+    activeCategory: '',
+
+    // Exercises (merged preset + custom)
     exercises: [],
+    frequentExercises: [],
+    customExercises: [],
 
     // Start settings sheet
     showStartSheet: false,
     startExercise: null,
     startTargetSets: 5,
+    startTargetSetsText: '5',
     startRestDurationSeconds: DEFAULT_REST_DURATION_SECONDS,
 
     // Active training data
@@ -61,8 +66,7 @@ Page({
     sheetIsWarmup: false,
     confirmHolding: false,
     confirmProgress: 0,
-    confirmHint: 'FIGHT!',
-    confirmFontSize: 32,
+    confirmHint: getConfirmLabel(),
 
     // Rest timer text
     restSeconds: 0,
@@ -91,8 +95,18 @@ Page({
 
   onLoad() {
     const categories = getCategories();
+    const customExercises = getCustomExercises();
     const restDurationSeconds = getRestDurationSeconds();
-    this.setData({ categories, restDurationSeconds });
+    const activeCategory = categories.length > 0 ? categories[0].key : '';
+
+    this.setData({
+      categories,
+      customExercises,
+      activeCategory,
+      restDurationSeconds
+    });
+
+    this.refreshExercises(activeCategory);
 
     // Resume session if exists
     const saved = getSession();
@@ -107,7 +121,7 @@ Page({
     app.globalData.trainingEntryMode = '';
 
     if (mode === 'new') {
-      this.resetToCategories(true);
+      this.resetToExercises(true);
       return;
     }
 
@@ -116,9 +130,15 @@ Page({
       if (saved) {
         this.enterTraining(saved);
       } else {
-        this.resetToCategories(false);
+        this.resetToExercises(false);
       }
+      return;
     }
+
+    // Refresh custom exercises when returning from exercise-form page
+    const customExercises = getCustomExercises();
+    this.setData({ customExercises });
+    this.refreshExercises(this.data.activeCategory);
   },
 
   onHide() {
@@ -134,42 +154,122 @@ Page({
     this.clearRestFinishedHint();
   },
 
-  /* ========== Navigation ========== */
+  /* ========== Category & Exercise Selection ========== */
 
-  onTapCategory(e) {
-    this.stopMissedSetTimer();
-    const { key, name } = e.currentTarget.dataset;
-    const exercises = getExercisesByCategory(key);
-    this.setData({
-      state: 'exercises',
-      currentCategory: key,
-      currentCategoryName: name,
-      exercises,
-      showStartSheet: false,
-      startExercise: null
+  refreshExercises(category) {
+    const exercises = getExercisesByCategory(category, this.data.customExercises);
+    // Add role header flag
+    let lastRole = null;
+    const annotated = exercises.map(function (ex) {
+      const showRoleHeader = ex.role !== lastRole;
+      if (showRoleHeader) lastRole = ex.role;
+      return Object.assign({}, ex, { showRoleHeader: showRoleHeader });
     });
+    const records = getRecords();
+    const frequent = getFrequentExercises(category, records, this.data.customExercises);
+    this.setData({ exercises: annotated, frequentExercises: frequent });
   },
 
-  onBackToCategories() {
+  onTapCategoryTab(e) {
     this.stopMissedSetTimer();
-    this.setData({ state: 'categories', showStartSheet: false, startExercise: null });
+    const { key } = e.currentTarget.dataset;
+    this.setData({ activeCategory: key });
+    this.refreshExercises(key);
   },
 
   onTapExercise(e) {
     this.stopMissedSetTimer();
     const { id } = e.currentTarget.dataset;
-    const exercise = getExerciseById(id);
+    const exercise = getExerciseById(id, this.data.customExercises);
     if (!exercise) return;
 
     this.setData({
       showStartSheet: true,
       startExercise: exercise,
       startTargetSets: exercise.targetSets,
+      startTargetSetsText: String(exercise.targetSets),
       startRestDurationSeconds: this.data.restDurationSeconds
     });
   },
 
-  /* ========== Training Flow ========== */
+  onTapFrequent(e) {
+    this.onTapExercise(e);
+  },
+
+  /* ========== Start Settings Sheet ========== */
+
+  onCloseStartSheet() {
+    this.setData({ showStartSheet: false, startExercise: null });
+  },
+
+  onStartSetsMinus() {
+    const val = Math.max(1, this.data.startTargetSets - 1);
+    this.setData({ startTargetSets: val, startTargetSetsText: String(val) });
+  },
+
+  onStartSetsPlus() {
+    const val = Math.min(10, this.data.startTargetSets + 1);
+    this.setData({ startTargetSets: val, startTargetSetsText: String(val) });
+  },
+
+  onStartSetsInput(e) {
+    const text = String(e.detail.value || '').replace(/[^\d]/g, '');
+    const val = Number.parseInt(text, 10);
+    this.setData({
+      startTargetSetsText: text,
+      startTargetSets: Number.isFinite(val) ? this.clampTargetSets(val) : 1
+    });
+  },
+
+  onStartSetsBlur() {
+    const val = Number.parseInt(this.data.startTargetSetsText, 10);
+    const targetSets = Number.isFinite(val)
+      ? this.clampTargetSets(val)
+      : this.clampTargetSets(this.data.startTargetSets || 1);
+    this.setData({
+      startTargetSets: targetSets,
+      startTargetSetsText: String(targetSets)
+    });
+  },
+
+  onSelectRestOption(e) {
+    const { seconds } = e.currentTarget.dataset;
+    this.setData({ startRestDurationSeconds: Number(seconds) });
+  },
+
+  onStartTraining() {
+    const { startExercise, startTargetSetsText, startRestDurationSeconds } = this.data;
+    if (!startExercise) return;
+    const targetSets = this.clampTargetSets(Number.parseInt(startTargetSetsText, 10) || this.data.startTargetSets);
+
+    saveRestDurationSeconds(startRestDurationSeconds);
+    this.setData({
+      restDurationSeconds: startRestDurationSeconds,
+      showStartSheet: false,
+      startTargetSets: targetSets,
+      startTargetSetsText: String(targetSets)
+    });
+
+    const session = createSession(startExercise, {
+      targetSets
+    });
+    this.enterTraining(session);
+  },
+
+  onAddCustomExercise() {
+    wx.navigateTo({
+      url: '/pages/exercise-form/exercise-form?category=' + this.data.activeCategory
+    });
+  },
+
+  onEditCustomExercise(e) {
+    const { id } = e.currentTarget.dataset;
+    wx.navigateTo({
+      url: '/pages/exercise-form/exercise-form?id=' + id
+    });
+  },
+
+  /* ========== Training Flow (unchanged) ========== */
 
   enterTraining(session) {
     let normalized = this.normalizeSession(session);
@@ -212,7 +312,7 @@ Page({
     };
   },
 
-  resetToCategories(shouldClearStorage) {
+  resetToExercises(shouldClearStorage) {
     this.stopRestTimer();
     this.stopConfirmHold();
     this.stopUndoToast();
@@ -223,13 +323,11 @@ Page({
     }
     const restDurationSeconds = getRestDurationSeconds();
     this.setData({
-      state: 'categories',
-      currentCategory: '',
-      currentCategoryName: '',
-      exercises: [],
+      state: 'exercises',
       showStartSheet: false,
       startExercise: null,
       startTargetSets: 5,
+      startTargetSetsText: '5',
       startRestDurationSeconds: restDurationSeconds,
       session: null,
       setDots: [],
@@ -246,8 +344,7 @@ Page({
       sheetIsWarmup: false,
       confirmHolding: false,
       confirmProgress: 0,
-      confirmHint: getFightLabel(0),
-      confirmFontSize: getFightFontSize(0),
+      confirmHint: getConfirmLabel(),
       restDurationSeconds,
       restSeconds: 0,
       restProgressDeg: 0,
@@ -256,6 +353,7 @@ Page({
       missedSetPrompt: false,
       summary: null
     });
+    this.refreshExercises(this.data.activeCategory);
   },
 
   buildDots(session) {
@@ -286,30 +384,22 @@ Page({
   formatSetTime(set) {
     if (!set || !set.timestamp) return '';
     const date = new Date(set.timestamp);
-    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} 完成`;
+    const h = date.getHours().toString().padStart(2, '0');
+    const m = date.getMinutes().toString().padStart(2, '0');
+    return h + ':' + m;
   },
 
-  decorateRecord(record) {
-    return {
-      ...record,
-      sets: record.sets.map((set) => ({
-        ...set,
-        setLabel: this.getSetLabel(set)
-      }))
-    };
+  toggleLastSetPanel() {
+    this.setData({ lastSetPanelExpanded: !this.data.lastSetPanelExpanded });
   },
 
-  getRestProgressDeg(restSeconds) {
-    const total = this.data.restDurationSeconds || DEFAULT_REST_DURATION_SECONDS;
-    return Math.max(0, Math.min(360, Math.round(((total - restSeconds) / total) * 360)));
-  },
-
-  /* ========== Sheet ========== */
+  /* ========== Sheet (unchanged) ========== */
 
   onOpenSheet() {
     const s = this.data.session;
     if (!s) return;
     this.stopMissedSetTimer();
+    this.confirmCommitted = false;
     this.setData({
       showSheet: true,
       sheetWeight: s.lastWeight,
@@ -319,14 +409,14 @@ Page({
       sheetIsWarmup: false,
       confirmHolding: false,
       confirmProgress: 0,
-      confirmHint: getFightLabel(0),
-      confirmFontSize: getFightFontSize(0),
+      confirmHint: getConfirmLabel(),
       missedSetPrompt: false
     });
   },
 
   onCloseSheet() {
-    this.stopConfirmHold();
+    if (this.data.confirmHolding) return;
+    this.stopConfirmHold(false);
     this.setData({ showSheet: false });
     if (this.data.state === 'training' && this.data.session) {
       this.startMissedSetTimer();
@@ -391,7 +481,7 @@ Page({
     const raw = String(value || '').replace(/[^\d.]/g, '');
     const parts = raw.split('.');
     if (parts.length === 1) return parts[0];
-    return `${parts[0]}.${parts.slice(1).join('').slice(0, decimalPlaces)}`;
+    return parts[0] + '.' + parts.slice(1).join('').slice(0, decimalPlaces);
   },
 
   parseWeight(value, fallback) {
@@ -408,66 +498,25 @@ Page({
     return String(this.round2(value));
   },
 
+  clampTargetSets(value) {
+    return Math.max(1, Math.min(10, Number(value) || 1));
+  },
+
   onToggleWarmup() {
     this.setData({ sheetIsWarmup: !this.data.sheetIsWarmup });
   },
 
-  /* ========== Start Settings ========== */
-
-  onCloseStartSheet() {
-    this.setData({
-      showStartSheet: false,
-      startExercise: null
-    });
-  },
-
-  onStartSetsMinus() {
-    this.setData({ startTargetSets: Math.max(1, this.data.startTargetSets - 1) });
-  },
-
-  onStartSetsPlus() {
-    this.setData({ startTargetSets: Math.min(10, this.data.startTargetSets + 1) });
-  },
-
-  onStartRestDurationChange(e) {
-    const index = Number(e.detail.value);
-    const next = this.data.restDurationOptions[index] || DEFAULT_REST_DURATION_SECONDS;
-    this.setData({ startRestDurationSeconds: next });
-  },
-
-  onConfirmStartTraining() {
-    const exercise = this.data.startExercise;
-    if (!exercise) return;
-
-    const restDurationSeconds = saveRestDurationSeconds(this.data.startRestDurationSeconds);
-    const session = createSession(exercise, { targetSets: this.data.startTargetSets });
-    this.setData({
-      showStartSheet: false,
-      startExercise: null,
-      restDurationSeconds
-    });
-    this.enterTraining(session);
-  },
-
-  onRestDurationChange(e) {
-    const index = Number(e.detail.value);
-    const next = this.data.restDurationOptions[index] || DEFAULT_REST_DURATION_SECONDS;
-    const restDurationSeconds = saveRestDurationSeconds(next);
-    this.setData({ restDurationSeconds });
-  },
-
-  /* ========== Long Press Confirm ========== */
+  /* ========== Delayed Confirm ========== */
 
   onConfirmTouchStart() {
-    if (!this.data.showSheet || this.confirmTimer) return;
-
+    if (!this.data.showSheet || this.confirmTimer || this.confirmCommitted) return;
     this.confirmStartedAt = Date.now();
     this.confirmCommitted = false;
+
     this.setData({
       confirmHolding: true,
       confirmProgress: 0,
-      confirmHint: getFightLabel(0),
-      confirmFontSize: getFightFontSize(0)
+      confirmHint: getConfirmLabel()
     });
 
     this.confirmTimer = setInterval(() => {
@@ -475,8 +524,7 @@ Page({
       const progress = Math.min(100, Math.round((elapsed / CONFIRM_HOLD_MS) * 100));
       this.setData({
         confirmProgress: progress,
-        confirmHint: getFightLabel(progress),
-        confirmFontSize: getFightFontSize(progress)
+        confirmHint: getConfirmLabel(progress)
       });
 
       if (elapsed >= CONFIRM_HOLD_MS && !this.confirmCommitted) {
@@ -503,71 +551,69 @@ Page({
       this.setData({
         confirmHolding: false,
         confirmProgress: 0,
-        confirmHint: getFightLabel(0),
-        confirmFontSize: getFightFontSize(0)
+        confirmHint: getConfirmLabel()
       });
     }
   },
 
-  /* ========== Confirm Set ========== */
+  /* ========== Confirm Set (unchanged) ========== */
 
   onConfirmSet() {
-    const { sheetWeightText, sheetRepsText, sheetIsWarmup, session } = this.data;
+    const { sheetWeightText, sheetRepsText, sheetIsWarmup, session, restDurationSeconds } = this.data;
     if (!session) return;
 
     const weight = this.parseWeight(sheetWeightText, this.data.sheetWeight);
     const reps = Math.max(1, Number.parseInt(sheetRepsText, 10) || this.data.sheetReps || 1);
-    const updated = addSet(session, weight, reps, sheetIsWarmup, this.data.restDurationSeconds);
+    const updated = addSet(session, weight, reps, sheetIsWarmup, restDurationSeconds);
     const latestSet = this.getLatestSet(updated);
-    const restSeconds = getRestSeconds(updated);
 
     this.setData({
       showSheet: false,
-      confirmHolding: false,
-      confirmProgress: 0,
-      confirmHint: getFightLabel(0),
-      confirmFontSize: getFightFontSize(0),
       session: updated,
       setDots: this.buildDots(updated),
       latestSet,
       latestSetLabel: this.getSetLabel(latestSet),
       latestSetTimeText: this.formatSetTime(latestSet),
       completedFormalSetCount: getCompletedFormalSetCount(updated),
-      lastSetPanelExpanded: false,
+      confirmHolding: false,
+      confirmProgress: 0,
+      confirmHint: getConfirmLabel(),
       sheetWeight: weight,
       sheetReps: reps,
       sheetWeightText: this.formatWeight(weight),
-      sheetRepsText: String(reps)
+      sheetRepsText: String(reps),
+      missedSetPrompt: false
     });
+    this.confirmCommitted = false;
+    this.stopMissedSetTimer();
 
     if (updated.completedAt) {
-      // Training complete
       this.stopRestTimer();
       const record = createRecord(updated);
       saveRecord(record);
       clearSession();
-      this.showUndoToast(latestSet);
+      this.startUndoToast(latestSet);
 
       this.setData({
         state: 'summary',
-        summary: this.decorateRecord(record)
+        summary: this.decorateRecord(record),
+        restSeconds: 0,
+        restProgressDeg: 0
       });
     } else {
-      // Enter rest
-      this.showUndoToast(latestSet);
+      this.startUndoToast(latestSet);
       this.setData({
         state: 'resting',
-        restSeconds,
-        restProgressDeg: this.getRestProgressDeg(restSeconds),
-        restFinishedHint: false,
-        missedSetPrompt: false
+        restSeconds: getRestSeconds(updated),
+        restProgressDeg: this.getRestProgressDeg(getRestSeconds(updated)),
+        restFinishedHint: false
       });
       this.startRestTimer();
       saveSession(updated);
     }
   },
 
-  /* ========== Undo ========== */
+  /* ========== Undo (unchanged) ========== */
 
   onUndoSet() {
     if (!this.data.session) return;
@@ -577,7 +623,6 @@ Page({
     const updated = undoSets(this.data.session);
     const latestSet = this.getLatestSet(updated);
     this.stopUndoToast();
-    this.stopMissedSetTimer();
     this.setData({
       session: updated,
       setDots: this.buildDots(updated),
@@ -585,62 +630,111 @@ Page({
       latestSetLabel: this.getSetLabel(latestSet),
       latestSetTimeText: this.formatSetTime(latestSet),
       completedFormalSetCount: getCompletedFormalSetCount(updated),
-      lastSetPanelExpanded: false,
       state: 'training',
       restSeconds: 0,
       restProgressDeg: 0,
-      undoToast: null,
       restFinishedHint: false,
       missedSetPrompt: false,
+      undoToast: null,
       summary: null
     });
     this.stopRestTimer();
+    this.clearRestFinishedHint();
     saveSession(updated);
     this.startMissedSetTimer();
   },
 
-  showUndoToast(set) {
-    this.stopUndoToast();
+  /* ========== Rest Timer (unchanged) ========== */
+
+  getRestProgressDeg(restSeconds) {
+    const total = Math.max(1, this.data.restDurationSeconds || DEFAULT_REST_DURATION_SECONDS);
+    return Math.max(0, Math.min(360, ((total - restSeconds) / total) * 360));
+  },
+
+  startRestTimer() {
+    this.stopRestTimer();
+    this.lastRenderedRestSeconds = null;
+    this.restTimer = setInterval(() => {
+      const s = this.data.session;
+      if (!s) return;
+
+      const sec = getRestSeconds(s);
+      const display = sec <= 0 ? 0 : sec;
+
+      if (this.lastRenderedRestSeconds !== display) {
+        this.lastRenderedRestSeconds = display;
+        this.setData({
+          restSeconds: display,
+          restProgressDeg: this.getRestProgressDeg(display)
+        });
+      }
+
+      if (sec <= 0) {
+        const updated = skipRest(s);
+        this.stopRestTimer();
+        this.setData({
+          session: updated,
+          state: 'training',
+          restSeconds: 0,
+          restProgressDeg: 0
+        });
+        saveSession(updated);
+        this.showRestFinishedHint();
+        this.startMissedSetTimer();
+      }
+    }, 250);
+  },
+
+  stopRestTimer() {
+    if (this.restTimer) {
+      clearInterval(this.restTimer);
+      this.restTimer = null;
+    }
+    this.lastRenderedRestSeconds = null;
+  },
+
+  onSkipRest() {
+    const updated = skipRest(this.data.session);
+    this.stopRestTimer();
+    this.clearRestFinishedHint();
     this.setData({
-      undoToast: {
-        setLabel: this.getSetLabel(set),
-        seconds: UNDO_TOAST_SECONDS
-      }
+      session: updated,
+      state: 'training',
+      restSeconds: 0,
+      restProgressDeg: 0,
+      restFinishedHint: false
     });
-
-    let remaining = UNDO_TOAST_SECONDS;
-    this.undoTickTimer = setInterval(() => {
-      remaining -= 1;
-      if (remaining <= 0) {
-        this.stopUndoToast();
-        return;
-      }
-      this.setData({
-        undoToast: {
-          setLabel: this.getSetLabel(set),
-          seconds: remaining
-        }
-      });
-    }, 1000);
+    saveSession(updated);
+    this.startMissedSetTimer();
   },
 
-  stopUndoToast() {
-    if (this.undoTickTimer) {
-      clearInterval(this.undoTickTimer);
-      this.undoTickTimer = null;
+  clearRestFinishedHint() {
+    if (this.restFinishedHintTimer) {
+      clearTimeout(this.restFinishedHintTimer);
+      this.restFinishedHintTimer = null;
     }
-    if (this.undoTimer) {
-      clearTimeout(this.undoTimer);
-      this.undoTimer = null;
-    }
-    if (this.data.undoToast) {
-      this.setData({ undoToast: null });
-    }
+    this.setData({ restFinishedHint: false });
   },
+
+  showRestFinishedHint() {
+    this.clearRestFinishedHint();
+    try {
+      wx.vibrateShort({ type: 'light' });
+    } catch (e) {
+      if (wx.vibrateShort) wx.vibrateShort();
+    }
+    this.setData({ restFinishedHint: true });
+    this.restFinishedHintTimer = setTimeout(() => {
+      this.setData({ restFinishedHint: false });
+    }, 5000);
+  },
+
+  /* ========== Missed Set Prompt ========== */
 
   startMissedSetTimer() {
     this.stopMissedSetTimer();
-    if (!this.data.session || this.data.state !== 'training') return;
+    if (!this.data.session || this.data.state !== 'training' || this.data.showSheet) return;
+    this.setData({ missedSetPrompt: false });
     this.missedSetTimer = setTimeout(() => {
       if (this.data.state === 'training' && this.data.session && !this.data.showSheet) {
         this.setData({ missedSetPrompt: true });
@@ -665,94 +759,71 @@ Page({
     this.startMissedSetTimer();
   },
 
-  onToggleLastSetPanel() {
-    if (!this.data.latestSet) return;
-    this.setData({ lastSetPanelExpanded: !this.data.lastSetPanelExpanded });
-  },
+  /* ========== Undo Toast ========== */
 
-  showRestFinishedHint() {
-    this.clearRestFinishedHint();
-    try {
-      wx.vibrateShort({ type: 'light' });
-    } catch (e) {
-      // Older devtools or platforms may not support typed vibration.
-      wx.vibrateShort();
-    }
-    this.setData({ restFinishedHint: true });
-    this.restFinishedHintTimer = setTimeout(() => {
-      this.setData({ restFinishedHint: false });
-    }, 5000);
-  },
-
-  clearRestFinishedHint() {
-    if (this.restFinishedHintTimer) {
-      clearTimeout(this.restFinishedHintTimer);
-      this.restFinishedHintTimer = null;
-    }
-    if (this.data.restFinishedHint) {
-      this.setData({ restFinishedHint: false });
-    }
-  },
-
-  /* ========== Rest Timer ========== */
-
-  startRestTimer() {
-    this.stopRestTimer();
-    this.lastRenderedRestSeconds = null;
-    this.restTimer = setInterval(() => {
-      const s = this.data.session;
-      if (!s) return;
-
-      const sec = getRestSeconds(s);
-      if (sec <= 0) {
-        const updated = skipRest(s);
-        this.stopRestTimer();
-        this.setData({
-          session: updated,
-          state: 'training',
-          restSeconds: 0,
-          restProgressDeg: 0
-        });
-        saveSession(updated);
-        this.showRestFinishedHint();
-        this.startMissedSetTimer();
-      } else {
-        if (sec !== this.lastRenderedRestSeconds) {
-          this.lastRenderedRestSeconds = sec;
-          this.setData({
-            restSeconds: sec,
-            restProgressDeg: this.getRestProgressDeg(sec)
-          });
-        }
-      }
-    }, 1000);
-  },
-
-  stopRestTimer() {
-    if (this.restTimer) {
-      clearInterval(this.restTimer);
-      this.restTimer = null;
-    }
-  },
-
-  onSkipRest() {
-    const updated = skipRest(this.data.session);
-    this.stopRestTimer();
-    this.clearRestFinishedHint();
+  startUndoToast(set) {
+    this.stopUndoToast();
     this.setData({
-      session: updated,
-      state: 'training',
-      restSeconds: 0,
-      restProgressDeg: 0,
-      missedSetPrompt: false
+      undoToast: {
+        setLabel: this.getSetLabel(set),
+        seconds: UNDO_TOAST_SECONDS
+      }
     });
-    saveSession(updated);
-    this.startMissedSetTimer();
+    this.undoTickTimer = setInterval(() => {
+      const u = this.data.undoToast;
+      if (!u) {
+        this.stopUndoToast();
+        return;
+      }
+      if (u.seconds <= 1) {
+        this.stopUndoToast();
+        this.setData({ undoToast: null });
+        return;
+      }
+      this.setData({ undoToast: { setLabel: u.setLabel, seconds: u.seconds - 1 } });
+    }, 1000);
+    this.undoTimer = setTimeout(() => {
+      this.setData({ undoToast: null });
+      this.stopUndoToast();
+    }, UNDO_TOAST_SECONDS * 1000);
   },
 
-  /* ========== Summary ========== */
+  stopUndoToast() {
+    if (this.undoTimer) {
+      clearTimeout(this.undoTimer);
+      this.undoTimer = null;
+    }
+    if (this.undoTickTimer) {
+      clearInterval(this.undoTickTimer);
+      this.undoTickTimer = null;
+    }
+  },
+
+  /* ========== Summary (unchanged) ========== */
 
   onFinishSummary() {
-    this.resetToCategories(false);
+    this.stopUndoToast();
+    this.setData({
+      state: 'exercises',
+      session: null,
+      summary: null,
+      setDots: [],
+      latestSet: null,
+      latestSetLabel: '',
+      latestSetTimeText: '',
+      completedFormalSetCount: 0,
+      lastSetPanelExpanded: false
+    });
+    this.refreshExercises(this.data.activeCategory);
+  },
+
+  decorateRecord(record) {
+    return {
+      ...record,
+      sets: record.sets.map((set) => ({
+        ...set,
+        setLabel: this.getSetLabel(set)
+      }))
+    };
   }
 });

@@ -403,12 +403,12 @@
         <article class="card done">
           <span class="tag">Done</span>
           <h3>训练交互增强</h3>
-          <p>2 秒长按确认、3 秒撤销、休息结束轻震动、漏记提醒、自定义休息时间已经进入实现链路。</p>
+          <p>1.5 秒延迟确认、3 秒撤销、休息结束轻震动、漏记提醒、自定义休息时间已经进入当前版本。</p>
         </article>
         <article class="card done">
           <span class="tag">Done</span>
           <h3>专注模式打磨</h3>
-          <p>开始前设置层、FIGHT 确认按钮、上一组信息面板、热身组不计正式组数等体验已明确。</p>
+          <p>开始前设置层、记录本组确认按钮、上一组信息面板、热身组不计正式组数等体验已明确。</p>
         </article>
       </div>
     </section>
@@ -423,7 +423,7 @@
         <div class="step"><strong>选动作</strong><span>按胸肩腿背腹快速选择预置动作。</span></div>
         <div class="step"><strong>开始设置</strong><span>确认目标组数、休息时间和默认数据。</span></div>
         <div class="step"><strong>专注训练</strong><span>大号 + 进入 Sheet，避免复杂入口。</span></div>
-        <div class="step"><strong>FIGHT!</strong><span>长按 2 秒确认，进度越满字越有力量。</span></div>
+        <div class="step"><strong>记录本组</strong><span>按住 1.5 秒确认，避免误触。</span></div>
         <div class="step"><strong>休息/总结</strong><span>自动倒计时，完成后生成本次记录。</span></div>
       </div>
     </section>
@@ -447,7 +447,7 @@
           <h3>训练中交互增强</h3>
           <p>围绕防误触和训练节奏做增强，但仍保持轻量。</p>
           <ul>
-            <li>2 秒长按确认，按钮文案为 FIGHT!，随进度增加感叹号和字号。</li>
+            <li>1.5 秒延迟确认，按钮文案为“记录本组”，保留进度反馈。</li>
             <li>记录后 3 秒撤销，撤销可恢复组数、停止休息。</li>
             <li>休息结束轻震动 + 视觉提示，不做音效。</li>
             <li>漏记提醒：训练页可记录状态停留 120 秒后提示补记。</li>
@@ -456,25 +456,25 @@
           </ul>
         </div>
 
-        <div class="phase next future">
-          <small>Phase 3 / Next</small>
+        <div class="phase">
+          <small>Phase 3 / Completed</small>
           <h3>动作内容与自定义能力</h3>
           <p>让小程序从“可展示 demo”走向“可长期使用工具”。</p>
           <ul>
-            <li>补全动作库：每个部位扩展到 6-10 个常见动作。</li>
-            <li>自定义动作：名称、部位、默认重量、默认次数、默认组数。</li>
-            <li>常用动作排序：优先展示最近使用和常用动作。</li>
+            <li>补全动作库：胸、背、肩、腿、手臂、核心 6 分类，每类 6-8 个常见动作。</li>
+            <li>自定义动作：名称、分类、角色、默认组数、默认重量、默认次数。</li>
+            <li>常用动作：按当前分类展示最近练过的动作。</li>
           </ul>
         </div>
 
-        <div class="phase future">
-          <small>Phase 4 / Future</small>
+        <div class="phase next future">
+          <small>Phase 4 / Next</small>
           <h3>总结卡与展示包装</h3>
           <p>训练完成后给用户一点情绪反馈，但不强制社交分享。</p>
           <ul>
             <li>截图风格总结卡：组数、训练量、时长、完成时间。</li>
             <li>克制文案：Quiet work counts too / Built in silence 等方向。</li>
-            <li>主题切换：黑绿主视觉 + 黑琥珀硬核模式。</li>
+            <li>主题切换：黑绿主视觉为主，黑红/黑琥珀方向后续再评估。</li>
             <li>Tab 图标：81x81 PNG，保持黑绿极简风格。</li>
           </ul>
         </div>
@@ -532,8 +532,8 @@
       <div class="cards">
         <article class="card next">
           <span class="tag amber">Next</span>
-          <h3>动作库扩展</h3>
-          <p>保留五分类框架，先补全常用动作，再做自定义动作。</p>
+          <h3>Phase 3 收尾</h3>
+          <p>整理验收文档、Claude 推送 prompt，并把 phase3-exercises 收束成可交付分支。</p>
         </article>
         <article class="card next">
           <span class="tag amber">Next</span>
@@ -543,7 +543,7 @@
         <article class="card next">
           <span class="tag amber">Next</span>
           <h3>主题与图标</h3>
-          <p>黑绿为主，黑琥珀为硬核可选；补齐 Tab 81x81 PNG 图标。</p>
+          <p>黑绿为主，黑红/黑琥珀方向后续再评估；补齐 Tab 81x81 PNG 图标。</p>
         </article>
       </div>
     </section>
@@ -558,8 +558,8 @@
         <div class="check">点击动作后先出现开始设置层。</div>
         <div class="check">目标组数改为 3 后，完成 3 个正式组进入总结。</div>
         <div class="check">热身组不推进正式组数，但保留在明细里。</div>
-        <div class="check">FIGHT! 短按不记录，长按 2 秒记录。</div>
-        <div class="check">FIGHT! 随进度增加感叹号和字号。</div>
+        <div class="check">记录本组未满 1.5 秒不记录，按满后写入本组。</div>
+        <div class="check">开始设置层和记录 Sheet 的关键数字可直接输入。</div>
         <div class="check">记录后 3 秒内可以撤销。</div>
         <div class="check">休息结束触发轻震动和视觉提示。</div>
         <div class="check">训练页停留 120 秒后出现漏记提醒。</div>

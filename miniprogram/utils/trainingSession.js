@@ -15,6 +15,7 @@ function createSession(exercise, overrides = {}) {
     exerciseId: exercise.id,
     exerciseName: exercise.name,
     categoryName: exercise.categoryName,
+    exerciseSource: exercise.source || 'preset',
     targetSets,
     defaultWeight: exercise.defaultWeight,
     defaultReps: exercise.defaultReps,
@@ -29,20 +30,8 @@ function createSession(exercise, overrides = {}) {
   };
 }
 
-function getFightLabel(progress) {
-  const value = Math.max(0, Math.min(100, Number(progress) || 0));
-  if (value >= 100) return 'FIGHT!!!!';
-  if (value >= 67) return 'FIGHT!!!';
-  if (value >= 34) return 'FIGHT!!';
-  return 'FIGHT!';
-}
-
-function getFightFontSize(progress) {
-  const value = Math.max(0, Math.min(100, Number(progress) || 0));
-  if (value >= 100) return 50;
-  if (value >= 67) return 44;
-  if (value >= 34) return 38;
-  return 32;
+function getConfirmLabel() {
+  return '记录本组';
 }
 
 function getFormalSets(sets) {
@@ -151,6 +140,8 @@ function createRecord(session) {
     id: `session-${session.startedAt}`,
     exerciseName: session.exerciseName,
     categoryName: session.categoryName,
+    exerciseId: session.exerciseId,
+    exerciseSource: session.exerciseSource || 'preset',
     sets: session.sets,
     totalSets: formalSets.length,
     totalVolume: getTotalVolume(session.sets),
@@ -163,8 +154,7 @@ module.exports = {
   REST_DURATION_MS,
   DEFAULT_REST_DURATION_SECONDS,
   createSession,
-  getFightLabel,
-  getFightFontSize,
+  getConfirmLabel,
   addSet,
   undoSets,
   skipRest,

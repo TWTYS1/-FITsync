@@ -17,6 +17,7 @@
       <view class="record-title-row">
         <text class="record-exercise">{{item.exerciseName}}</text>
         <text class="record-category">{{item.categoryName}}</text>
+        <text wx:if="{{item.sourceLabel}}" class="record-custom-tag">{{item.sourceLabel}}</text>
       </view>
       <view class="record-date">
         <text class="date-text">{{item.dateStr}} {{item.timeStr}}</text>

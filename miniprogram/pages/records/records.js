@@ -19,6 +19,7 @@ Page({
           : 0,
         dateStr: this.formatDate(r.startedAt),
         timeStr: this.formatTime(r.startedAt),
+        sourceLabel: r.exerciseSource === 'custom' ? '自定义' : '',
         sets: (r.sets || []).map((s) => ({
           ...s,
           setLabel: s.isWarmup ? '热身组' : `第 ${s.formalSetNumber || s.setNumber} 组`

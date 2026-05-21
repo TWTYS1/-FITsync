@@ -1,0 +1,115 @@
+<view class="container">
+  <view class="header">
+    <text class="title">{{isEdit ? '编辑动作' : '新增自定义动作'}}</text>
+  </view>
+
+  <!-- Name -->
+  <view class="form-group">
+    <text class="form-label">动作名称</text>
+    <input
+      class="form-input"
+      value="{{name}}"
+      placeholder="输入动作名称"
+      placeholder-class="input-placeholder"
+      bindinput="onInputName"
+      maxlength="20"
+    />
+  </view>
+
+  <!-- Category -->
+  <view class="form-group">
+    <text class="form-label">分类</text>
+    <view class="chip-row">
+      <view
+        wx:for="{{categories}}"
+        wx:key="key"
+        class="chip {{category === item.key ? 'chip-active' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onSelectCategory"
+      >
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Role -->
+  <view class="form-group">
+    <text class="form-label">角色</text>
+    <view class="chip-row">
+      <view
+        wx:for="{{roles}}"
+        wx:key="key"
+        class="chip {{role === item.key ? 'chip-active' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onSelectRole"
+      >
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Target Sets -->
+  <view class="form-group">
+    <text class="form-label">目标组数</text>
+    <view class="stepper-row">
+      <view class="step-btn" bindtap="onTargetSetsMinus">− 1</view>
+      <input
+        class="step-input step-input-sets"
+        type="number"
+        value="{{targetSetsText}}"
+        bindinput="onTargetSetsInput"
+        bindblur="onTargetSetsBlur"
+        confirm-type="done"
+      />
+      <view class="step-btn step-plus" bindtap="onTargetSetsPlus">+ 1</view>
+    </view>
+  </view>
+
+  <!-- Default Weight -->
+  <view class="form-group">
+    <text class="form-label">默认重量 (kg)</text>
+    <view class="stepper-row">
+      <view class="step-btn" bindtap="onWeightMinus">− 2.5</view>
+      <input
+        class="step-input"
+        type="digit"
+        value="{{defaultWeightText}}"
+        bindinput="onWeightInput"
+        bindblur="onWeightBlur"
+        confirm-type="done"
+      />
+      <view class="step-btn step-plus" bindtap="onWeightPlus">+ 2.5</view>
+    </view>
+  </view>
+
+  <!-- Default Reps -->
+  <view class="form-group">
+    <text class="form-label">默认次数</text>
+    <view class="stepper-row">
+      <view class="step-btn" bindtap="onRepsMinus">− 1</view>
+      <input
+        class="step-input step-input-reps"
+        type="number"
+        value="{{defaultRepsText}}"
+        bindinput="onRepsInput"
+        bindblur="onRepsBlur"
+        confirm-type="done"
+      />
+      <view class="step-btn step-plus" bindtap="onRepsPlus">+ 1</view>
+    </view>
+  </view>
+
+  <!-- Actions -->
+  <view class="actions">
+    <button class="btn-save" bindtap="onSave">
+      {{isEdit ? '保存修改' : '添加动作'}}
+    </button>
+    <button
+      wx:if="{{canDelete}}"
+      class="btn-delete"
+      bindtap="onDelete"
+    >
+      删除动作
+    </button>
+  </view>
+</view>

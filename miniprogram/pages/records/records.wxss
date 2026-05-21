@@ -73,6 +73,14 @@
   border-radius: 8rpx;
 }
 
+.record-custom-tag {
+  font-size: 20rpx;
+  color: var(--accent);
+  border: 1rpx solid var(--accent);
+  border-radius: 6rpx;
+  padding: 2rpx 10rpx;
+}
+
 .record-date {
   margin-top: 8rpx;
 }
