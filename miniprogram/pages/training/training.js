@@ -173,12 +173,9 @@ Page({
     });
     const records = getRecords();
     const frequent = getFrequentExercises(category, records, this.data.customExercises);
-    const todaySummary = buildDailySummary(records, Date.now());
     this.setData({
       exercises: annotated,
-      frequentExercises: frequent,
-      todaySummary,
-      hasTodaySummary: todaySummary.records.length > 0
+      frequentExercises: frequent
     });
   },
 
@@ -852,10 +849,6 @@ Page({
       undoToast: null
     });
     this.refreshExercises(this.data.activeCategory);
-  },
-
-  onContinueAfterSummary() {
-    this.onFinishSummary();
   },
 
   decorateRecord(record) {

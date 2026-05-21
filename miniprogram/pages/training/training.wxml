@@ -222,7 +222,7 @@
     </view>
 
     <view class="summary-actions">
-      <button class="btn-finish btn-secondary" bindtap="onContinueAfterSummary">继续练下一个动作</button>
+      <button class="btn-finish btn-secondary" bindtap="onFinishSummary">继续练下一个动作</button>
       <button class="btn-finish" bindtap="onOpenTodaySummary">查看今日卡</button>
     </view>
   </view>
