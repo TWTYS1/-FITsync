@@ -109,8 +109,108 @@ function buildDailySummary(records, targetDate) {
   };
 }
 
+function getExerciseHistoricalMaxWeight(records, exerciseName, beforeDateKey) {
+  var maxWeight = 0;
+  (Array.isArray(records) ? records : []).forEach(function (record) {
+    if (record.exerciseName !== exerciseName) return;
+    var recordDateKey = getDateKey(record.startedAt || record.completedAt);
+    if (!recordDateKey || recordDateKey >= beforeDateKey) return;
+    (record.sets || []).forEach(function (set) {
+      if (set.isWarmup) return;
+      var w = Number(set.weight) || 0;
+      if (w > maxWeight) maxWeight = w;
+    });
+  });
+  return maxWeight;
+}
+
+function buildRecordDays(records) {
+  var allRecords = Array.isArray(records) ? records : [];
+
+  var dayMap = {};
+  allRecords.forEach(function (record) {
+    var timestamp = record.startedAt || record.completedAt;
+    if (!timestamp) return;
+    var dk = getDateKey(timestamp);
+    if (!dayMap[dk]) dayMap[dk] = [];
+    dayMap[dk].push(record);
+  });
+
+  var dateKeys = Object.keys(dayMap).sort(function (a, b) {
+    if (a > b) return -1;
+    if (a < b) return 1;
+    return 0;
+  });
+
+  return dateKeys.map(function (dateKey) {
+    var dayRecords = dayMap[dateKey];
+
+    dayRecords.sort(function (a, b) {
+      return (a.startedAt || a.completedAt || 0) - (b.startedAt || b.completedAt || 0);
+    });
+
+    var exerciseNames = uniqueInOrder(dayRecords.map(function (r) { return r.exerciseName; }));
+    var exerciseRows = exerciseNames.map(function (exName) {
+      var exRecords = dayRecords.filter(function (r) { return r.exerciseName === exName; });
+      var allSets = [];
+      exRecords.forEach(function (r) {
+        (r.sets || []).forEach(function (s) { allSets.push(s); });
+      });
+
+      var formalSets = allSets.filter(function (s) { return !s.isWarmup; });
+      var volume = formalSets.reduce(function (sum, s) {
+        return sum + (Number(s.weight) || 0) * (Number(s.reps) || 0);
+      }, 0);
+      var maxWeight = formalSets.length > 0
+        ? Math.max.apply(null, formalSets.map(function (s) { return Number(s.weight) || 0; }))
+        : 0;
+
+      var historicalMax = getExerciseHistoricalMaxWeight(allRecords, exName, dateKey);
+      var hasHistory = false;
+      dateKeys.forEach(function (earlierKey) {
+        if (earlierKey >= dateKey) return;
+        (dayMap[earlierKey] || []).forEach(function (r) {
+          if (r.exerciseName === exName) hasHistory = true;
+        });
+      });
+      var isWeightPr = maxWeight > 0 && hasHistory && maxWeight > historicalMax;
+
+      return {
+        exerciseName: exName,
+        categoryName: exRecords[0].categoryName || '',
+        sets: formalSets.length,
+        volume: volume,
+        maxWeight: maxWeight,
+        isWeightPr: isWeightPr
+      };
+    });
+
+    var totalSets = exerciseRows.reduce(function (sum, row) { return sum + row.sets; }, 0);
+    var totalVolume = exerciseRows.reduce(function (sum, row) { return sum + row.volume; }, 0);
+    var totalDurationMinutes = dayRecords.reduce(function (sum, r) {
+      return sum + getRecordDurationMinutes(r);
+    }, 0);
+    var dayMaxWeight = exerciseRows.reduce(function (max, row) {
+      return row.maxWeight > max ? row.maxWeight : max;
+    }, 0);
+
+    return {
+      dateKey: dateKey,
+      records: dayRecords,
+      exerciseCount: exerciseNames.length,
+      exerciseNames: exerciseNames,
+      totalSets: totalSets,
+      totalVolume: totalVolume,
+      totalDurationMinutes: totalDurationMinutes,
+      maxWeight: dayMaxWeight,
+      exerciseRows: exerciseRows
+    };
+  });
+}
+
 module.exports = {
   buildDailySummary,
   buildHistoryGrid28Days,
+  buildRecordDays,
   getDateKey
 };

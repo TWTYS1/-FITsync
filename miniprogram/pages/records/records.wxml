@@ -1,9 +1,10 @@
 <view class="container">
   <view class="header">
-    <text class="title">训练记录</text>
-    <text class="subtitle">{{records.length}} 条记录</text>
+    <text class="title">每日复盘</text>
+    <text class="subtitle">{{recordDays.length}} 个训练日</text>
   </view>
 
+  <!-- Today Summary Entry -->
   <view wx:if="{{hasTodaySummary}}" class="daily-entry surface-elevated" bindtap="onOpenTodaySummary">
     <view class="daily-copy">
       <text class="daily-label">今日总结</text>
@@ -17,51 +18,68 @@
   </view>
 
   <!-- Empty State -->
-  <view wx:if="{{records.length === 0}}" class="empty-state">
+  <view wx:if="{{recordDays.length === 0}}" class="empty-state">
     <text class="empty-icon">📋</text>
     <text class="empty-text">还没有训练记录</text>
     <text class="empty-desc">完成一次训练后，记录会出现在这里</text>
   </view>
 
-  <!-- Records List -->
-  <view wx:for="{{records}}" wx:key="id" class="record-card surface-elevated">
-    <view class="record-header">
-      <view class="record-title-row">
-        <text class="record-exercise">{{item.exerciseName}}</text>
-        <text class="record-category">{{item.categoryName}}</text>
-        <text wx:if="{{item.sourceLabel}}" class="record-custom-tag">{{item.sourceLabel}}</text>
-      </view>
-      <view class="record-date">
-        <text class="date-text">{{item.dateStr}} {{item.timeStr}}</text>
+  <!-- Daily Table -->
+  <view wx:for="{{recordDays}}" wx:key="dateKey" class="day-block">
+    <view
+      class="day-row surface-elevated"
+      data-datekey="{{item.dateKey}}"
+      bindtap="onToggleDay"
+    >
+      <view class="day-row-main">
+        <view class="day-date-col">
+          <text class="day-date">{{item.dateLabel}}</text>
+          <text class="day-actions-count">{{item.exerciseCount}} 个动作</text>
+        </view>
+        <view class="day-metrics">
+          <view class="day-metric">
+            <text class="dm-val">{{item.totalSets}}</text>
+            <text class="dm-label">组</text>
+          </view>
+          <view class="day-metric">
+            <text class="dm-val">{{item.totalVolume}}</text>
+            <text class="dm-label">kg</text>
+          </view>
+          <view class="day-metric">
+            <text class="dm-val">{{item.totalDurationMinutes}}</text>
+            <text class="dm-label">分钟</text>
+          </view>
+          <view class="day-metric">
+            <text class="dm-val dm-max">{{item.maxWeight}}</text>
+            <text class="dm-label">MAX kg</text>
+          </view>
+        </view>
+        <view class="day-expand-arrow">
+          <text class="expand-icon {{expandedDateKey === item.dateKey ? 'expand-icon-open' : ''}}">▾</text>
+        </view>
       </view>
     </view>
 
-    <view class="record-stats">
-      <view class="record-stat">
-        <text class="rs-val">{{item.totalSets}}</text>
-        <text class="rs-label">组</text>
-      </view>
-      <view class="record-stat">
-        <text class="rs-val">{{item.totalVolume}}</text>
-        <text class="rs-label">kg 总量</text>
-      </view>
-      <view class="record-stat">
-        <text class="rs-val">{{item.duration}}</text>
-        <text class="rs-label">分钟</text>
-      </view>
-    </view>
-
-    <!-- Set Details (collapsed by default) -->
-    <view class="record-sets">
+    <!-- Expanded Exercise Details -->
+    <view wx:if="{{expandedDateKey === item.dateKey}}" class="day-detail">
       <view
-        wx:for="{{item.sets}}"
-        wx:key="setNumber"
-        wx:for-item="s"
-        class="record-set-row"
+        wx:for="{{item.exerciseRows}}"
+        wx:key="exerciseName"
+        wx:for-item="row"
+        class="exercise-detail-row"
       >
-        <text class="rs-num">{{s.setLabel}}</text>
-        <text class="rs-data">{{s.weight}} kg × {{s.reps}} 次</text>
-        <text wx:if="{{s.isWarmup}}" class="rs-warmup">热身</text>
+        <view class="edr-left">
+          <view class="edr-name-row">
+            <text class="edr-exercise">{{row.exerciseName}}</text>
+            <text wx:if="{{row.isWeightPr}}" class="pr-badge">PR</text>
+          </view>
+          <text class="edr-category">{{row.categoryName}}</text>
+        </view>
+        <view class="edr-stats">
+          <text class="edr-stat">{{row.sets}} 组</text>
+          <text class="edr-stat">{{row.volume}} kg</text>
+          <text class="edr-stat edr-max">{{row.maxWeight}} kg</text>
+        </view>
       </view>
     </view>
   </view>

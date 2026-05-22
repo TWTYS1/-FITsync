@@ -20,6 +20,7 @@
   margin-top: 8rpx;
 }
 
+/* Today Summary Entry (unchanged) */
 .daily-entry {
   padding: 28rpx;
   margin-bottom: 28rpx;
@@ -94,107 +95,155 @@
   margin-top: 8rpx;
 }
 
-/* Record Card */
-.record-card {
+/* ================================================================
+ * Daily Table
+ * ================================================================ */
+
+.day-block {
+  margin-bottom: 16rpx;
+}
+
+.day-row {
   padding: 28rpx;
-  margin-bottom: 20rpx;
 }
 
-.record-header {
-  margin-bottom: 24rpx;
-}
-
-.record-title-row {
+.day-row-main {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: 20rpx;
 }
 
-.record-exercise {
-  font-size: 30rpx;
-  font-weight: 600;
+.day-date-col {
+  min-width: 100rpx;
+  display: flex;
+  flex-direction: column;
 }
 
-.record-category {
-  font-size: 22rpx;
-  color: var(--accent);
-  background: rgba(34, 197, 94, 0.1);
-  padding: 4rpx 16rpx;
-  border-radius: 8rpx;
+.day-date {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #f4f4f5;
 }
 
-.record-custom-tag {
+.day-actions-count {
   font-size: 20rpx;
-  color: var(--accent);
-  border: 1rpx solid var(--accent);
-  border-radius: 6rpx;
-  padding: 2rpx 10rpx;
+  color: var(--muted);
+  margin-top: 4rpx;
 }
 
-.record-date {
-  margin-top: 8rpx;
+.day-metrics {
+  flex: 1;
+  display: flex;
+  gap: 24rpx;
 }
 
-.date-text {
+.day-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 80rpx;
+}
+
+.dm-val {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #00ff66;
+}
+
+.dm-max {
+  font-size: 26rpx;
+  color: #f4f4f5;
+}
+
+.dm-label {
+  font-size: 18rpx;
+  color: var(--muted);
+  margin-top: 2rpx;
+}
+
+.day-expand-arrow {
+  padding-left: 8rpx;
+}
+
+.expand-icon {
   font-size: 24rpx;
   color: var(--muted);
+  transition: transform 0.2s;
+  display: inline-block;
 }
 
-.record-stats {
+.expand-icon-open {
+  transform: rotate(180deg);
+  color: #00ff66;
+}
+
+/* Expanded Detail */
+.day-detail {
+  margin-top: 2rpx;
+  padding: 16rpx 28rpx 20rpx;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1rpx solid rgba(0, 255, 102, 0.15);
+}
+
+.exercise-detail-row {
   display: flex;
-  gap: 40rpx;
-  padding-bottom: 24rpx;
-  border-bottom: 1rpx solid var(--border);
-  margin-bottom: 20rpx;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid rgba(63, 63, 70, 0.3);
 }
 
-.record-stat {
-  text-align: center;
+.exercise-detail-row:last-child {
+  border-bottom: none;
 }
 
-.rs-val {
-  display: block;
-  font-size: 36rpx;
-  font-weight: 700;
-  color: var(--accent);
+.edr-left {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.rs-label {
-  display: block;
+.edr-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.edr-exercise {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #f4f4f5;
+}
+
+.edr-category {
   font-size: 20rpx;
   color: var(--muted);
   margin-top: 2rpx;
 }
 
-.record-sets {
+.pr-badge {
+  font-size: 18rpx;
+  font-weight: 800;
+  color: #0a0a0a;
+  background: #00ff66;
+  padding: 2rpx 12rpx;
+  border-radius: 6rpx;
+  letter-spacing: 0.05em;
+}
+
+.edr-stats {
   display: flex;
-  flex-direction: column;
-  gap: 12rpx;
+  gap: 20rpx;
+  flex-shrink: 0;
 }
 
-.record-set-row {
-  display: flex;
-  align-items: center;
-  padding: 10rpx 16rpx;
-  background: var(--surface);
-  border-radius: 8rpx;
+.edr-stat {
+  font-size: 22rpx;
+  color: rgba(244, 244, 245, 0.65);
+  white-space: nowrap;
 }
 
-.rs-num {
-  font-size: 24rpx;
-  color: var(--muted);
-  width: 100rpx;
-}
-
-.rs-data {
-  flex: 1;
-  font-size: 26rpx;
-}
-
-.rs-warmup {
-  font-size: 20rpx;
-  color: var(--accent);
-  border: 1rpx solid var(--accent);
-  border-radius: 4rpx;
-  padding: 2rpx 10rpx;
+.edr-max {
+  color: #00ff66;
+  font-weight: 600;
 }

@@ -283,4 +283,161 @@ assert.ok(
   'leaving summary to continue training should clear undo toast state'
 );
 
+/* ================================================================
+ * buildRecordDays tests
+ * ================================================================ */
+
+const {
+  buildRecordDays
+} = require('../utils/dailySummary');
+
+var day1 = new Date(2026, 4, 20, 19, 0, 0).getTime();
+var day2 = new Date(2026, 4, 21, 19, 0, 0).getTime();
+var multiDayRecords = [
+  {
+    id: 'a',
+    exerciseName: '杠铃卧推',
+    categoryName: '胸',
+    startedAt: day1,
+    completedAt: day1 + 25 * 60000,
+    sets: [
+      { weight: 40, reps: 10, isWarmup: true },
+      { weight: 60, reps: 8, isWarmup: false },
+      { weight: 65, reps: 6, isWarmup: false }
+    ]
+  },
+  {
+    id: 'b',
+    exerciseName: '坐姿划船',
+    categoryName: '背',
+    startedAt: day1 + 5 * 60000,
+    completedAt: day1 + 35 * 60000,
+    sets: [
+      { weight: 50, reps: 10, isWarmup: false },
+      { weight: 55, reps: 8, isWarmup: false }
+    ]
+  },
+  {
+    id: 'c',
+    exerciseName: '杠铃卧推',
+    categoryName: '胸',
+    startedAt: day2,
+    completedAt: day2 + 20 * 60000,
+    sets: [
+      { weight: 60, reps: 8, isWarmup: false },
+      { weight: 70, reps: 5, isWarmup: false }
+    ]
+  },
+  {
+    id: 'd',
+    exerciseName: '哑铃弯举',
+    categoryName: '手臂',
+    startedAt: day2 + 5 * 60000,
+    completedAt: day2 + 15 * 60000,
+    sets: [
+      { weight: 12, reps: 12, isWarmup: false },
+      { weight: 12, reps: 10, isWarmup: false }
+    ]
+  }
+];
+
+var days = buildRecordDays(multiDayRecords);
+assert.strictEqual(days.length, 2, 'two distinct days should produce 2 day entries');
+assert.strictEqual(days[0].dateKey, '2026-05-21', 'newest day should be first');
+assert.strictEqual(days[1].dateKey, '2026-05-20', 'oldest day should be last');
+
+// Day 2 (newest) checks
+var day2Entry = days[0];
+assert.strictEqual(day2Entry.exerciseCount, 2);
+assert.strictEqual(day2Entry.totalSets, 4, 'day 2 total formal sets');
+assert.strictEqual(day2Entry.totalVolume, 60 * 8 + 70 * 5 + 12 * 12 + 12 * 10, 'day 2 total volume excludes warmup');
+assert.strictEqual(day2Entry.totalDurationMinutes, 30);
+assert.strictEqual(day2Entry.maxWeight, 70, 'day 2 max weight across all exercises');
+
+// Day 1 checks
+var day1Entry = days[1];
+assert.strictEqual(day1Entry.exerciseCount, 2);
+assert.strictEqual(day1Entry.totalSets, 4, 'day 1 total formal sets (2+2)');
+assert.strictEqual(day1Entry.totalVolume, 60 * 8 + 65 * 6 + 50 * 10 + 55 * 8, 'day 1 total volume');
+assert.strictEqual(day1Entry.maxWeight, 65);
+
+// Exercise row checks — Day 2 bench press
+var benchDay2 = day2Entry.exerciseRows.find(function (r) { return r.exerciseName === '杠铃卧推'; });
+assert.ok(benchDay2, 'bench press should appear on day 2');
+assert.strictEqual(benchDay2.sets, 2);
+assert.strictEqual(benchDay2.volume, 60 * 8 + 70 * 5);
+assert.strictEqual(benchDay2.maxWeight, 70);
+
+// PR: bench on day 2 (max 70) > day 1 max (65) → PR
+assert.strictEqual(benchDay2.isWeightPr, true, '70 > 65 should be a weight PR');
+
+// No PR for new exercise: 哑铃弯举 only appears on day 2, no history → no PR
+var curlDay2 = day2Entry.exerciseRows.find(function (r) { return r.exerciseName === '哑铃弯举'; });
+assert.ok(curlDay2);
+assert.strictEqual(curlDay2.isWeightPr, false, 'new exercise with no history should not be PR');
+
+// No PR for bench on day 1 (first occurrence in dataset)
+var benchDay1 = day1Entry.exerciseRows.find(function (r) { return r.exerciseName === '杠铃卧推'; });
+assert.ok(benchDay1);
+assert.strictEqual(benchDay1.isWeightPr, false, 'first occurrence should not be PR');
+
+// Equal max weight — no PR
+var sameWeightRecords = [
+  {
+    id: 'e1',
+    exerciseName: '杠铃深蹲',
+    categoryName: '腿',
+    startedAt: day1,
+    completedAt: day1 + 30 * 60000,
+    sets: [{ weight: 100, reps: 5, isWarmup: false }]
+  },
+  {
+    id: 'e2',
+    exerciseName: '杠铃深蹲',
+    categoryName: '腿',
+    startedAt: day2,
+    completedAt: day2 + 30 * 60000,
+    sets: [{ weight: 100, reps: 5, isWarmup: false }]
+  }
+];
+var sameDays = buildRecordDays(sameWeightRecords);
+var squatDay2 = sameDays[0].exerciseRows.find(function (r) { return r.exerciseName === '杠铃深蹲'; });
+assert.strictEqual(squatDay2.isWeightPr, false, 'equal weight should not be PR');
+
+// Warmup excluded from max weight
+var warmupOnlyRecords = [
+  {
+    id: 'w1',
+    exerciseName: '热身测试',
+    categoryName: '胸',
+    startedAt: day1,
+    completedAt: day1 + 10 * 60000,
+    sets: [{ weight: 100, reps: 5, isWarmup: true }]
+  },
+  {
+    id: 'w2',
+    exerciseName: '热身测试',
+    categoryName: '胸',
+    startedAt: day2,
+    completedAt: day2 + 10 * 60000,
+    sets: [{ weight: 10, reps: 10, isWarmup: false }]
+  }
+];
+var warmupDays = buildRecordDays(warmupOnlyRecords);
+var warmupEx = warmupDays[0].exerciseRows.find(function (r) { return r.exerciseName === '热身测试'; });
+assert.strictEqual(warmupEx.maxWeight, 10, 'warmup should not count toward max weight');
+assert.strictEqual(warmupEx.isWeightPr, true, '10 > 0 (no historical formal weight) should be PR');
+assert.strictEqual(warmupDays[1].exerciseRows[0].maxWeight, 0, 'day with only warmup should have maxWeight 0');
+
+// Empty records
+var emptyDays = buildRecordDays([]);
+assert.strictEqual(emptyDays.length, 0, 'empty records should produce empty array');
+
+// Records page exports check
+var recordsSource = fs.readFileSync(path.join(__dirname, '../pages/records/records.js'), 'utf8');
+assert.ok(/buildRecordDays/.test(recordsSource), 'records page should import buildRecordDays');
+assert.ok(/onToggleDay/.test(recordsSource), 'records page should define onToggleDay');
+assert.ok(/expandedDateKey/.test(recordsSource), 'records page should track expandedDateKey');
+assert.ok(/onOpenTodaySummary/.test(recordsSource), 'records page should still define onOpenTodaySummary');
+
 console.log('all tests passed');
