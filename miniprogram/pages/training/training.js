@@ -20,7 +20,10 @@ const {
   getRecords,
   getRestDurationSeconds,
   saveRestDurationSeconds,
-  getCustomExercises
+  getCustomExercises,
+  saveExerciseOverride,
+  applyExerciseOverride,
+  applyExerciseOverrides
 } = require('../../utils/storage');
 const {
   buildDailySummary
@@ -51,7 +54,12 @@ Page({
     startExercise: null,
     startTargetSets: 5,
     startTargetSetsText: '5',
+    startDefaultWeight: 0,
+    startDefaultWeightText: '0',
+    startDefaultReps: 8,
+    startDefaultRepsText: '8',
     startRestDurationSeconds: DEFAULT_REST_DURATION_SECONDS,
+    saveAsDefault: false,
 
     // Active training data
     session: null,
@@ -163,7 +171,8 @@ Page({
   /* ========== Category & Exercise Selection ========== */
 
   refreshExercises(category) {
-    const exercises = getExercisesByCategory(category, this.data.customExercises);
+    const raw = getExercisesByCategory(category, this.data.customExercises);
+    const exercises = applyExerciseOverrides(raw);
     // Add role header flag
     let lastRole = null;
     const annotated = exercises.map(function (ex) {
@@ -172,7 +181,9 @@ Page({
       return Object.assign({}, ex, { showRoleHeader: showRoleHeader });
     });
     const records = getRecords();
-    const frequent = getFrequentExercises(category, records, this.data.customExercises);
+    const frequent = applyExerciseOverrides(
+      getFrequentExercises(category, records, this.data.customExercises)
+    );
     const todaySummary = buildDailySummary(records, Date.now());
     this.setData({
       exercises: annotated,
@@ -200,15 +211,23 @@ Page({
   onTapExercise(e) {
     this.stopMissedSetTimer();
     const { id } = e.currentTarget.dataset;
-    const exercise = getExerciseById(id, this.data.customExercises);
+    var exercise = getExerciseById(id, this.data.customExercises);
     if (!exercise) return;
+    exercise = applyExerciseOverride(exercise);
+    var weight = exercise.defaultWeight || 0;
+    var reps = exercise.defaultReps || 8;
 
     this.setData({
       showStartSheet: true,
       startExercise: exercise,
       startTargetSets: exercise.targetSets,
       startTargetSetsText: String(exercise.targetSets),
-      startRestDurationSeconds: this.data.restDurationSeconds
+      startDefaultWeight: weight,
+      startDefaultWeightText: this.formatWeight(weight),
+      startDefaultReps: reps,
+      startDefaultRepsText: String(reps),
+      startRestDurationSeconds: this.data.restDurationSeconds,
+      saveAsDefault: false
     });
   },
 
@@ -252,25 +271,105 @@ Page({
     });
   },
 
+  onStartWeightMinus() {
+    var val = Math.max(0, this.round2(this.data.startDefaultWeight - 2.5));
+    this.setData({ startDefaultWeight: val, startDefaultWeightText: this.formatWeight(val) });
+  },
+
+  onStartWeightPlus() {
+    var val = this.round2(this.data.startDefaultWeight + 2.5);
+    this.setData({ startDefaultWeight: val, startDefaultWeightText: this.formatWeight(val) });
+  },
+
+  onStartWeightInput(e) {
+    var text = this.normalizeDecimalText(e.detail.value, 2);
+    var val = Number.parseFloat(text);
+    this.setData({
+      startDefaultWeightText: text,
+      startDefaultWeight: Number.isFinite(val) ? this.round2(val) : 0
+    });
+  },
+
+  onStartWeightBlur() {
+    var weight = this.parseWeight(this.data.startDefaultWeightText, this.data.startDefaultWeight);
+    this.setData({
+      startDefaultWeight: weight,
+      startDefaultWeightText: this.formatWeight(weight)
+    });
+  },
+
+  onStartRepsMinus() {
+    var val = Math.max(1, this.data.startDefaultReps - 1);
+    this.setData({ startDefaultReps: val, startDefaultRepsText: String(val) });
+  },
+
+  onStartRepsPlus() {
+    var val = this.data.startDefaultReps + 1;
+    this.setData({ startDefaultReps: val, startDefaultRepsText: String(val) });
+  },
+
+  onStartRepsInput(e) {
+    var text = String(e.detail.value || '').replace(/[^\d]/g, '');
+    var val = Number.parseInt(text, 10);
+    this.setData({
+      startDefaultRepsText: text,
+      startDefaultReps: Number.isFinite(val) ? Math.max(1, val) : 1
+    });
+  },
+
+  onStartRepsBlur() {
+    var reps = Math.max(1, Number.parseInt(this.data.startDefaultRepsText, 10) || this.data.startDefaultReps || 8);
+    this.setData({
+      startDefaultReps: reps,
+      startDefaultRepsText: String(reps)
+    });
+  },
+
+  onToggleSaveAsDefault() {
+    this.setData({ saveAsDefault: !this.data.saveAsDefault });
+  },
+
   onSelectRestOption(e) {
     const { seconds } = e.currentTarget.dataset;
     this.setData({ startRestDurationSeconds: Number(seconds) });
   },
 
   onStartTraining() {
-    const { startExercise, startTargetSetsText, startRestDurationSeconds } = this.data;
-    if (!startExercise) return;
-    const targetSets = this.clampTargetSets(Number.parseInt(startTargetSetsText, 10) || this.data.startTargetSets);
+    var exercise = this.data.startExercise;
+    if (!exercise) return;
+    var targetSets = this.clampTargetSets(Number.parseInt(this.data.startTargetSetsText, 10) || this.data.startTargetSets);
+    var defaultWeight = this.parseWeight(this.data.startDefaultWeightText, this.data.startDefaultWeight);
+    var defaultReps = Math.max(1, Number.parseInt(this.data.startDefaultRepsText, 10) || this.data.startDefaultReps || 8);
+    var startRestDurationSeconds = this.data.startRestDurationSeconds;
+
+    if (this.data.saveAsDefault) {
+      saveExerciseOverride(exercise.id, {
+        targetSets: targetSets,
+        defaultWeight: defaultWeight,
+        defaultReps: defaultReps
+      });
+    }
 
     saveRestDurationSeconds(startRestDurationSeconds);
     this.setData({
       restDurationSeconds: startRestDurationSeconds,
       showStartSheet: false,
       startTargetSets: targetSets,
-      startTargetSetsText: String(targetSets)
+      startTargetSetsText: String(targetSets),
+      startDefaultWeight: defaultWeight,
+      startDefaultWeightText: this.formatWeight(defaultWeight),
+      startDefaultReps: defaultReps,
+      startDefaultRepsText: String(defaultReps),
+      saveAsDefault: false
     });
 
-    const session = createSession(startExercise, {
+    var configuredExercise = Object.assign({}, exercise, {
+      targetSets: targetSets,
+      defaultWeight: defaultWeight,
+      defaultReps: defaultReps
+    });
+
+    var session = createSession(configuredExercise, {
       targetSets
     });
     this.enterTraining(session);
@@ -358,7 +457,12 @@ Page({
       startExercise: null,
       startTargetSets: 5,
       startTargetSetsText: '5',
+      startDefaultWeight: 0,
+      startDefaultWeightText: '0',
+      startDefaultReps: 8,
+      startDefaultRepsText: '8',
       startRestDurationSeconds: restDurationSeconds,
+      saveAsDefault: false,
       session: null,
       setDots: [],
       latestSet: null,

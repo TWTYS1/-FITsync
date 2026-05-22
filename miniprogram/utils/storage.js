@@ -7,7 +7,8 @@ const KEYS = {
   CURRENT_SESSION: 'current_session',
   TRAINING_RECORDS: 'training_records',
   REST_DURATION_SECONDS: 'rest_duration_seconds',
-  CUSTOM_EXERCISES: 'custom_exercises'
+  CUSTOM_EXERCISES: 'custom_exercises',
+  EXERCISE_OVERRIDES: 'exercise_overrides'
 };
 
 const DEFAULT_REST_DURATION_SECONDS = 90;
@@ -116,6 +117,53 @@ function deleteCustomExercise(id) {
   wx.setStorageSync(KEYS.CUSTOM_EXERCISES, exercises);
 }
 
+/* ================================================================
+ * 预设动作个人默认值覆盖
+ * ================================================================ */
+
+function getExerciseOverrides() {
+  return wx.getStorageSync(KEYS.EXERCISE_OVERRIDES) || {};
+}
+
+function getExerciseOverride(exerciseId) {
+  var overrides = getExerciseOverrides();
+  return overrides[exerciseId] || null;
+}
+
+function saveExerciseOverride(exerciseId, values) {
+  var overrides = getExerciseOverrides();
+  var rawSets = Number(values.targetSets);
+  var targetSets = Number.isFinite(rawSets) ? Math.max(1, Math.min(10, rawSets)) : 5;
+  var rawWeight = Number(values.defaultWeight);
+  var defaultWeight = Number.isFinite(rawWeight) ? Math.max(0, Math.round(rawWeight * 100) / 100) : 0;
+  var rawReps = Number(values.defaultReps);
+  var defaultReps = Number.isFinite(rawReps) ? Math.max(1, rawReps) : 8;
+  overrides[exerciseId] = {
+    targetSets: targetSets,
+    defaultWeight: defaultWeight,
+    defaultReps: defaultReps,
+    updatedAt: Date.now()
+  };
+  wx.setStorageSync(KEYS.EXERCISE_OVERRIDES, overrides);
+}
+
+function applyExerciseOverride(exercise) {
+  if (!exercise || !exercise.id) return exercise;
+  var override = getExerciseOverride(exercise.id);
+  if (!override) return exercise;
+  return Object.assign({}, exercise, {
+    targetSets: override.targetSets,
+    defaultWeight: override.defaultWeight,
+    defaultReps: override.defaultReps
+  });
+}
+
+function applyExerciseOverrides(exercises) {
+  return (exercises || []).map(function (ex) {
+    return applyExerciseOverride(ex);
+  });
+}
+
 module.exports = {
   saveSession,
   getSession,
@@ -129,5 +177,10 @@ module.exports = {
   getCustomExercises,
   saveCustomExercise,
   updateCustomExercise,
-  deleteCustomExercise
+  deleteCustomExercise,
+  getExerciseOverrides,
+  getExerciseOverride,
+  saveExerciseOverride,
+  applyExerciseOverride,
+  applyExerciseOverrides
 };

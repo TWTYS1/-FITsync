@@ -251,6 +251,38 @@
     </view>
 
     <view class="sheet-row">
+      <text class="sheet-label">默认重量 (kg)</text>
+      <view class="sheet-stepper">
+        <view class="step-btn" bindtap="onStartWeightMinus">− 2.5</view>
+        <input
+          class="step-input"
+          type="digit"
+          value="{{startDefaultWeightText}}"
+          bindinput="onStartWeightInput"
+          bindblur="onStartWeightBlur"
+          confirm-type="done"
+        />
+        <view class="step-btn step-plus" bindtap="onStartWeightPlus">+ 2.5</view>
+      </view>
+    </view>
+
+    <view class="sheet-row">
+      <text class="sheet-label">默认次数</text>
+      <view class="sheet-stepper">
+        <view class="step-btn" bindtap="onStartRepsMinus">− 1</view>
+        <input
+          class="step-input step-input-reps"
+          type="number"
+          value="{{startDefaultRepsText}}"
+          bindinput="onStartRepsInput"
+          bindblur="onStartRepsBlur"
+          confirm-type="done"
+        />
+        <view class="step-btn step-plus" bindtap="onStartRepsPlus">+ 1</view>
+      </view>
+    </view>
+
+    <view class="sheet-row">
       <text class="sheet-label">休息时间</text>
       <view class="rest-options">
         <view
@@ -263,6 +295,15 @@
           <text>{{item}}s</text>
         </view>
       </view>
+    </view>
+
+    <view class="sheet-row">
+      <text class="sheet-label">保存为我的默认值</text>
+      <switch
+        checked="{{saveAsDefault}}"
+        bindchange="onToggleSaveAsDefault"
+        color="#22c55e"
+      />
     </view>
 
     <button class="btn-confirm" bindtap="onStartTraining">开始训练</button>

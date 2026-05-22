@@ -440,4 +440,82 @@ assert.ok(/onToggleDay/.test(recordsSource), 'records page should define onToggl
 assert.ok(/expandedDateKey/.test(recordsSource), 'records page should track expandedDateKey');
 assert.ok(/onOpenTodaySummary/.test(recordsSource), 'records page should still define onOpenTodaySummary');
 
+/* ================================================================
+ * Exercise overrides tests
+ * ================================================================ */
+
+// Minimal wx mock for storage functions in Node
+var wxStorage = {};
+global.wx = {
+  getStorageSync: function (key) { return wxStorage[key]; },
+  setStorageSync: function (key, value) { wxStorage[key] = value; },
+  removeStorageSync: function (key) { delete wxStorage[key]; }
+};
+
+var storageModule = require('../utils/storage');
+var applyExerciseOverride = storageModule.applyExerciseOverride;
+var applyExerciseOverrides = storageModule.applyExerciseOverrides;
+var saveExerciseOverride = storageModule.saveExerciseOverride;
+var getExerciseOverride = storageModule.getExerciseOverride;
+var getExerciseOverrides = storageModule.getExerciseOverrides;
+
+// No overrides yet — values should stay unchanged
+var testEx = { id: 'bench-press', name: '杠铃卧推', targetSets: 3, defaultWeight: 60, defaultReps: 8 };
+var result = applyExerciseOverride(testEx);
+assert.strictEqual(result.targetSets, 3, 'no override should keep targetSets');
+assert.strictEqual(result.defaultWeight, 60, 'no override should keep defaultWeight');
+assert.strictEqual(result.defaultReps, 8, 'no override should keep defaultReps');
+
+var resultList = applyExerciseOverrides([testEx]);
+assert.strictEqual(resultList.length, 1);
+assert.strictEqual(resultList[0].defaultWeight, 60);
+
+// Save override and verify it applies
+saveExerciseOverride('bench-press', { targetSets: 5, defaultWeight: 72.5, defaultReps: 10 });
+var override = getExerciseOverride('bench-press');
+assert.strictEqual(override.targetSets, 5);
+assert.strictEqual(override.defaultWeight, 72.5);
+assert.strictEqual(override.defaultReps, 10);
+
+var overridden = applyExerciseOverride(testEx);
+assert.strictEqual(overridden.targetSets, 5, 'overridden targetSets should apply');
+assert.strictEqual(overridden.defaultWeight, 72.5, 'overridden defaultWeight should apply');
+assert.strictEqual(overridden.defaultReps, 10, 'overridden defaultReps should apply');
+
+// Override should not affect other exercises
+var otherEx = { id: 'squat', name: '杠铃深蹲', targetSets: 4, defaultWeight: 80, defaultReps: 5 };
+var otherResult = applyExerciseOverride(otherEx);
+assert.strictEqual(otherResult.targetSets, 4, 'other exercise should keep its own targetSets');
+assert.strictEqual(otherResult.defaultWeight, 80, 'other exercise should keep its own defaultWeight');
+
+// Normalization: targetSets clamped 1-10
+saveExerciseOverride('test-clamp', { targetSets: 99, defaultWeight: -5, defaultReps: 0 });
+var clamped = getExerciseOverride('test-clamp');
+assert.strictEqual(clamped.targetSets, 10, 'targetSets should clamp to 10');
+assert.strictEqual(clamped.defaultWeight, 0, 'negative weight should clamp to 0');
+assert.strictEqual(clamped.defaultReps, 1, 'zero reps should clamp to 1');
+
+// applyExerciseOverride on null returns null, no-id object returns itself
+assert.strictEqual(applyExerciseOverride(null), null);
+var noId = applyExerciseOverride({});
+assert.strictEqual(typeof noId, 'object', 'exercise without id should return as-is');
+
+// applyExerciseOverrides on empty array
+assert.deepStrictEqual(applyExerciseOverrides([]), []);
+
+// Clean up wx mock
+delete global.wx;
+
+// Training page source checks
+var trainingSource = fs.readFileSync(path.join(__dirname, '../pages/training/training.js'), 'utf8');
+assert.ok(/saveExerciseOverride/.test(trainingSource), 'training page should import saveExerciseOverride');
+assert.ok(/applyExerciseOverrides/.test(trainingSource), 'training page should import applyExerciseOverrides');
+assert.ok(/applyExerciseOverride/.test(trainingSource), 'training page should import applyExerciseOverride');
+assert.ok(/startDefaultWeight/.test(trainingSource), 'start sheet should have defaultWeight field');
+assert.ok(/startDefaultReps/.test(trainingSource), 'start sheet should have defaultReps field');
+assert.ok(/saveAsDefault/.test(trainingSource), 'start sheet should have saveAsDefault switch');
+assert.ok(/onToggleSaveAsDefault/.test(trainingSource), 'should define toggle save handler');
+assert.ok(/onStartWeightMinus/.test(trainingSource), 'should define start weight stepper');
+assert.ok(/onStartRepsPlus/.test(trainingSource), 'should define start reps stepper');
+
 console.log('all tests passed');
