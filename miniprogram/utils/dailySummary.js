@@ -72,6 +72,27 @@ function buildHistoryGrid28Days(records, targetDate) {
   });
 }
 
+function selectFeaturedExercises(exercises) {
+  const rows = Array.isArray(exercises) ? exercises.slice() : [];
+  if (!rows.length) return [];
+
+  const prRows = rows
+    .filter(function (row) { return row.isWeightPr; })
+    .sort(function (a, b) { return b.maxWeight - a.maxWeight; });
+
+  if (!prRows.length) {
+    return rows.sort(function (a, b) { return b.maxWeight - a.maxWeight; }).slice(0, 2);
+  }
+
+  const picked = [prRows[0]];
+  const remaining = rows
+    .filter(function (row) { return row.name !== picked[0].name; })
+    .sort(function (a, b) { return b.maxWeight - a.maxWeight; });
+
+  if (remaining.length) picked.push(remaining[0]);
+  return picked;
+}
+
 function buildDailySummary(records, targetDate) {
   const allRecords = Array.isArray(records) ? records : [];
   const dayStart = startOfLocalDay(targetDate);
@@ -91,8 +112,56 @@ function buildDailySummary(records, targetDate) {
     .filter(Boolean)
     .map((timestamp) => getDateKey(timestamp))).length;
 
+  var dayMaxWeight = 0;
+  var hasWeightPr = false;
+  var dayDateKey = getDateKey(dayStart);
+  exerciseNames.forEach(function (exName) {
+    var exRecords = dayRecords.filter(function (r) { return r.exerciseName === exName; });
+    var allSets = [];
+    exRecords.forEach(function (r) {
+      (r.sets || []).forEach(function (s) { allSets.push(s); });
+    });
+    var formalSets = allSets.filter(function (s) { return !s.isWarmup; });
+    var exMaxWeight = formalSets.length > 0
+      ? Math.max.apply(null, formalSets.map(function (s) { return Number(s.weight) || 0; }))
+      : 0;
+    if (exMaxWeight > dayMaxWeight) dayMaxWeight = exMaxWeight;
+    if (exMaxWeight > 0) {
+      var hist = getExerciseHistoricalMaxWeight(allRecords, exName, dayDateKey);
+      if (hist.hasFormalHistory && exMaxWeight > hist.maxWeight) hasWeightPr = true;
+    }
+  });
+
+  var allFeaturedExercises = [];
+  exerciseNames.forEach(function (exName) {
+    var exRecords = dayRecords.filter(function (r) { return r.exerciseName === exName; });
+    var allSets = [];
+    exRecords.forEach(function (r) {
+      (r.sets || []).forEach(function (s) { allSets.push(s); });
+    });
+    var formalSets = allSets.filter(function (s) { return !s.isWarmup; });
+    var exMaxWeight = formalSets.length > 0
+      ? Math.max.apply(null, formalSets.map(function (s) { return Number(s.weight) || 0; }))
+      : 0;
+    var exHist = getExerciseHistoricalMaxWeight(allRecords, exName, dayDateKey);
+    var exIsPr = exMaxWeight > 0 && exHist.hasFormalHistory && exMaxWeight > exHist.maxWeight;
+    var exVolume = formalSets.reduce(function (sum, s) {
+      return sum + (Number(s.weight) || 0) * (Number(s.reps) || 0);
+    }, 0);
+    allFeaturedExercises.push({
+      name: exName,
+      categoryName: exRecords[0].categoryName || '',
+      sets: formalSets.length,
+      volume: exVolume,
+      maxWeight: exMaxWeight,
+      isWeightPr: exIsPr
+    });
+  });
+  var featuredExercises = selectFeaturedExercises(allFeaturedExercises);
+  var hasMoreFeaturedExercises = allFeaturedExercises.length > featuredExercises.length;
+
   return {
-    dateKey: getDateKey(dayStart),
+    dateKey: dayDateKey,
     date: getDisplayDate(dayStart),
     weekday: getWeekday(dayStart),
     dayNumber: activeDayCount,
@@ -103,6 +172,10 @@ function buildDailySummary(records, targetDate) {
     totalSets,
     totalVolume,
     totalDurationMinutes,
+    maxWeight: dayMaxWeight,
+    hasWeightPr: hasWeightPr,
+    featuredExercises: featuredExercises,
+    hasMoreFeaturedExercises: hasMoreFeaturedExercises,
     startedAt: startedTimes.length ? Math.min.apply(null, startedTimes) : null,
     completedAt: completedTimes.length ? Math.max.apply(null, completedTimes) : null,
     historyGrid28Days: buildHistoryGrid28Days(allRecords, dayStart)
@@ -111,17 +184,19 @@ function buildDailySummary(records, targetDate) {
 
 function getExerciseHistoricalMaxWeight(records, exerciseName, beforeDateKey) {
   var maxWeight = 0;
+  var hasFormalHistory = false;
   (Array.isArray(records) ? records : []).forEach(function (record) {
     if (record.exerciseName !== exerciseName) return;
     var recordDateKey = getDateKey(record.startedAt || record.completedAt);
     if (!recordDateKey || recordDateKey >= beforeDateKey) return;
     (record.sets || []).forEach(function (set) {
       if (set.isWarmup) return;
+      hasFormalHistory = true;
       var w = Number(set.weight) || 0;
       if (w > maxWeight) maxWeight = w;
     });
   });
-  return maxWeight;
+  return { maxWeight: maxWeight, hasFormalHistory: hasFormalHistory };
 }
 
 function buildRecordDays(records) {
@@ -165,15 +240,8 @@ function buildRecordDays(records) {
         ? Math.max.apply(null, formalSets.map(function (s) { return Number(s.weight) || 0; }))
         : 0;
 
-      var historicalMax = getExerciseHistoricalMaxWeight(allRecords, exName, dateKey);
-      var hasHistory = false;
-      dateKeys.forEach(function (earlierKey) {
-        if (earlierKey >= dateKey) return;
-        (dayMap[earlierKey] || []).forEach(function (r) {
-          if (r.exerciseName === exName) hasHistory = true;
-        });
-      });
-      var isWeightPr = maxWeight > 0 && hasHistory && maxWeight > historicalMax;
+      var hist = getExerciseHistoricalMaxWeight(allRecords, exName, dateKey);
+      var isWeightPr = maxWeight > 0 && hist.hasFormalHistory && maxWeight > hist.maxWeight;
 
       return {
         exerciseName: exName,
@@ -212,5 +280,6 @@ module.exports = {
   buildDailySummary,
   buildHistoryGrid28Days,
   buildRecordDays,
-  getDateKey
+  getDateKey,
+  getExerciseHistoricalMaxWeight
 };

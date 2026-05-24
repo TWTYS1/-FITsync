@@ -72,14 +72,14 @@ function getTodayRecords() {
 
 function getRestDurationSeconds() {
   const saved = Number(wx.getStorageSync(KEYS.REST_DURATION_SECONDS));
-  if ([60, 90, 120, 180].includes(saved)) {
+  if ([60, 90, 120, 180, 300].includes(saved)) {
     return saved;
   }
   return DEFAULT_REST_DURATION_SECONDS;
 }
 
 function saveRestDurationSeconds(seconds) {
-  const normalized = [60, 90, 120, 180].includes(Number(seconds))
+  const normalized = [60, 90, 120, 180, 300].includes(Number(seconds))
     ? Number(seconds)
     : DEFAULT_REST_DURATION_SECONDS;
   wx.setStorageSync(KEYS.REST_DURATION_SECONDS, normalized);

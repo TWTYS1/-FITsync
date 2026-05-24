@@ -14,15 +14,19 @@
 
       <view wx:if="{{hasRecords}}" class="metrics-grid">
         <view class="metric metric-primary">
-          <text class="metric-label">VOLUME(KG)</text>
-          <text class="metric-value accent">{{summary.totalVolume}}</text>
+          <text class="metric-label">今日最重</text>
+          <text class="metric-value accent">{{summaryMaxWeightLabel}}</text>
         </view>
         <view class="metric">
-          <text class="metric-label">TIME(MIN)</text>
+          <text class="metric-label">动作</text>
+          <text class="metric-value">{{summary.exerciseCount}}</text>
+        </view>
+        <view class="metric">
+          <text class="metric-label">时长</text>
           <text class="metric-value">{{summary.totalDurationMinutes}}</text>
         </view>
-        <view class="metric metric-wide">
-          <text class="metric-label">TOTAL SETS</text>
+        <view class="metric">
+          <text class="metric-label">正式组</text>
           <text class="metric-value">{{summary.totalSets}}</text>
         </view>
       </view>
@@ -43,17 +47,27 @@
         </view>
       </view>
 
-      <view wx:if="{{hasRecords}}" class="exercise-section">
+      <view wx:if="{{hasRecords}}" class="featured-section">
+        <text class="featured-label">FEATURED</text>
         <view
-          wx:for="{{recordRows}}"
-          wx:key="id"
-          class="exercise-row"
+          wx:for="{{featuredExercises}}"
+          wx:key="name"
+          class="featured-row"
         >
-          <view class="exercise-copy">
-            <text class="exercise-name">{{item.name}}</text>
-            <text class="exercise-category">{{item.category}}</text>
+          <view class="featured-copy">
+            <text class="featured-name">{{item.name}}</text>
+            <text class="featured-category">{{item.categoryName}}</text>
           </view>
-          <text class="exercise-data">{{item.sets}} SETS · {{item.volume}} KG</text>
+          <view class="row-stats">
+            <text class="row-set-count">{{item.sets}}</text>
+            <text class="row-weight">{{item.maxWeightLabel}}</text>
+            <text wx:if="{{item.isWeightPr}}" class="pr-chip-edge">PR</text>
+          </view>
+        </view>
+        <view wx:if="{{hasMoreFeaturedExercises}}" class="featured-more">
+          <view class="more-dot"></view>
+          <view class="more-dot"></view>
+          <view class="more-dot"></view>
         </view>
       </view>
 
@@ -71,6 +85,31 @@
 
     <view class="hint-row">
       <text>截图保存这张今日训练卡</text>
+    </view>
+
+    <view wx:if="{{hasRecords}}" class="details-section">
+      <view class="details-header">
+        <text class="details-title">今日明细</text>
+        <text class="details-date">{{summary.date}} {{summary.weekday}}</text>
+      </view>
+      <view
+        wx:for="{{detailRows}}"
+        wx:key="exerciseName"
+        class="detail-row"
+      >
+        <view class="detail-copy">
+          <text class="detail-name">{{item.exerciseName}}</text>
+          <text class="detail-category">{{item.categoryName}}</text>
+        </view>
+        <view class="row-stats detail-stats">
+          <text class="row-set-count">{{item.sets}}</text>
+          <text class="row-weight">{{item.maxWeightLabel}}</text>
+          <text wx:if="{{item.isWeightPr}}" class="pr-chip-edge">PR</text>
+        </view>
+      </view>
+      <view wx:if="{{detailRows.length === 0}}" class="detail-empty">
+        <text>暂无明细</text>
+      </view>
     </view>
   </view>
 

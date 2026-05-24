@@ -86,7 +86,7 @@ Page({
     restProgressDeg: 0,
     restFinishedHint: false,
     restDurationSeconds: DEFAULT_REST_DURATION_SECONDS,
-    restDurationOptions: [60, 90, 120, 180],
+    restDurationOptions: [60, 90, 120, 180, 300],
 
     // Lightweight prompts
     undoToast: null,

@@ -214,7 +214,8 @@ withMockedNow([1000], function () {
  * ================================================================ */
 
 const {
-  buildDailySummary
+  buildDailySummary,
+  getExerciseHistoricalMaxWeight
 } = require('../utils/dailySummary');
 
 var targetDay = new Date(2026, 4, 21, 12, 0, 0).getTime();
@@ -263,6 +264,10 @@ assert.deepStrictEqual(daily.categoryNames, ['胸', '背'], 'daily summary shoul
 assert.strictEqual(daily.totalSets, 4, 'daily summary should count formal sets only');
 assert.strictEqual(daily.totalVolume, 2030, 'daily summary should exclude warmup volume');
 assert.strictEqual(daily.totalDurationMinutes, 60, 'daily summary should sum per-record durations');
+assert.strictEqual(daily.maxWeight, 62.5, 'daily summary should expose max formal-set weight');
+assert.strictEqual(daily.hasWeightPr, false, 'new exercise without formal history should not count as PR');
+assert.strictEqual(daily.featuredExercises.length, 2, 'daily summary should expose featured rows');
+assert.strictEqual(daily.hasMoreFeaturedExercises, false, 'two exercises should not show ellipsis');
 assert.strictEqual(daily.startedAt, new Date(2026, 4, 21, 19, 0, 0).getTime());
 assert.strictEqual(daily.completedAt, new Date(2026, 4, 21, 20, 10, 0).getTime());
 assert.strictEqual(daily.historyGrid28Days.length, 28, 'history grid should cover 28 days');
@@ -426,12 +431,87 @@ var warmupOnlyRecords = [
 var warmupDays = buildRecordDays(warmupOnlyRecords);
 var warmupEx = warmupDays[0].exerciseRows.find(function (r) { return r.exerciseName === '热身测试'; });
 assert.strictEqual(warmupEx.maxWeight, 10, 'warmup should not count toward max weight');
-assert.strictEqual(warmupEx.isWeightPr, true, '10 > 0 (no historical formal weight) should be PR');
+assert.strictEqual(warmupEx.isWeightPr, false, 'warmup-only history has no formal history, so no PR');
 assert.strictEqual(warmupDays[1].exerciseRows[0].maxWeight, 0, 'day with only warmup should have maxWeight 0');
 
 // Empty records
 var emptyDays = buildRecordDays([]);
 assert.strictEqual(emptyDays.length, 0, 'empty records should produce empty array');
+
+var histBeforeDay2 = getExerciseHistoricalMaxWeight(multiDayRecords, '杠铃卧推', '2026-05-21');
+assert.strictEqual(histBeforeDay2.maxWeight, 65, 'historical max before day2 should be 65');
+assert.strictEqual(histBeforeDay2.hasFormalHistory, true, 'historical max should track formal history');
+
+var warmupHist = getExerciseHistoricalMaxWeight(warmupOnlyRecords, '热身测试', '2026-05-21');
+assert.strictEqual(warmupHist.maxWeight, 0, 'warmup weight should not count as historical max');
+assert.strictEqual(warmupHist.hasFormalHistory, false, 'warmup-only records should not create formal history');
+
+var featuredThreeRecords = [
+  {
+    id: 'ft0',
+    exerciseName: '杠铃卧推',
+    categoryName: '胸',
+    startedAt: day1,
+    completedAt: day1 + 20 * 60000,
+    sets: [{ weight: 65, reps: 5, isWarmup: false }]
+  },
+  {
+    id: 'ft1',
+    exerciseName: '杠铃卧推',
+    categoryName: '胸',
+    startedAt: day2,
+    completedAt: day2 + 20 * 60000,
+    sets: [{ weight: 70, reps: 5, isWarmup: false }]
+  },
+  {
+    id: 'ft2',
+    exerciseName: '坐姿划船',
+    categoryName: '背',
+    startedAt: day2 + 30 * 60000,
+    completedAt: day2 + 45 * 60000,
+    sets: [{ weight: 55, reps: 8, isWarmup: false }]
+  },
+  {
+    id: 'ft3',
+    exerciseName: '哑铃弯举',
+    categoryName: '手臂',
+    startedAt: day2 + 60 * 60000,
+    completedAt: day2 + 75 * 60000,
+    sets: [{ weight: 12, reps: 12, isWarmup: false }]
+  }
+];
+var featuredDaily = buildDailySummary(featuredThreeRecords, day2);
+assert.strictEqual(featuredDaily.maxWeight, 70, 'daily max weight should be the heaviest formal set');
+assert.strictEqual(featuredDaily.hasWeightPr, true, 'bench 70 over historical 65 should mark daily PR');
+assert.strictEqual(featuredDaily.featuredExercises.length, 2, 'daily card should feature at most 2 exercises');
+assert.strictEqual(featuredDaily.hasMoreFeaturedExercises, true, 'more than 2 exercises should show ellipsis flag');
+assert.strictEqual(featuredDaily.featuredExercises[0].name, '杠铃卧推', 'PR exercise should be first');
+assert.strictEqual(featuredDaily.featuredExercises[0].isWeightPr, true);
+assert.strictEqual(featuredDaily.featuredExercises[1].name, '坐姿划船', 'heaviest remaining exercise should be second');
+
+var noPrFeaturedDaily = buildDailySummary([
+  {
+    id: 'np1',
+    exerciseName: '哑铃弯举',
+    categoryName: '手臂',
+    startedAt: day2,
+    completedAt: day2 + 10 * 60000,
+    sets: [{ weight: 12, reps: 12, isWarmup: false }]
+  },
+  {
+    id: 'np2',
+    exerciseName: '坐姿划船',
+    categoryName: '背',
+    startedAt: day2 + 20 * 60000,
+    completedAt: day2 + 35 * 60000,
+    sets: [{ weight: 55, reps: 8, isWarmup: false }]
+  }
+], day2);
+assert.strictEqual(noPrFeaturedDaily.featuredExercises[0].name, '坐姿划船', 'without PR, heaviest exercise should be first');
+
+var emptyDaily = buildDailySummary(multiDayRecords, new Date(2026, 4, 22, 12, 0, 0).getTime());
+assert.strictEqual(emptyDaily.featuredExercises.length, 0, 'empty day featured should be empty');
+assert.strictEqual(emptyDaily.hasMoreFeaturedExercises, false, 'empty day should not show ellipsis');
 
 // Records page exports check
 var recordsSource = fs.readFileSync(path.join(__dirname, '../pages/records/records.js'), 'utf8');
@@ -517,5 +597,30 @@ assert.ok(/saveAsDefault/.test(trainingSource), 'start sheet should have saveAsD
 assert.ok(/onToggleSaveAsDefault/.test(trainingSource), 'should define toggle save handler');
 assert.ok(/onStartWeightMinus/.test(trainingSource), 'should define start weight stepper');
 assert.ok(/onStartRepsPlus/.test(trainingSource), 'should define start reps stepper');
+
+// Daily summary page source checks
+var dailySummaryPageSource = fs.readFileSync(path.join(__dirname, '../pages/daily-summary/daily-summary.js'), 'utf8');
+assert.ok(/buildRecordDays/.test(dailySummaryPageSource), 'daily-summary page should import buildRecordDays');
+assert.ok(/maxWeight/.test(dailySummaryPageSource), 'daily-summary page should reference maxWeight');
+assert.ok(/hasWeightPr/.test(dailySummaryPageSource), 'daily-summary page should reference hasWeightPr');
+assert.ok(/summaryMaxWeightLabel/.test(dailySummaryPageSource), 'daily-summary page should format primary weight label');
+assert.ok(/maxWeightLabel/.test(dailySummaryPageSource), 'daily-summary page should format row weight labels');
+assert.ok(/featuredExercises/.test(dailySummaryPageSource), 'daily-summary page should render featuredExercises');
+assert.ok(/hasMoreFeaturedExercises/.test(dailySummaryPageSource), 'daily-summary page should track hasMoreFeaturedExercises');
+assert.ok(/detailRows/.test(dailySummaryPageSource), 'daily-summary page should compute detailRows');
+
+var dailySummaryWxml = fs.readFileSync(path.join(__dirname, '../pages/daily-summary/daily-summary.wxml'), 'utf8');
+assert.ok(!/MAX\(KG\)/.test(dailySummaryWxml), 'daily summary card should not show MAX(KG)');
+assert.ok(!/MAX\s/.test(dailySummaryWxml), 'daily summary rows should not show MAX prefix');
+assert.ok(!/VOLUME\(KG\)/.test(dailySummaryWxml), 'daily summary card should not regress to VOLUME(KG)');
+assert.ok(!/SETS/.test(dailySummaryWxml), 'daily summary card should not show SETS copy');
+assert.ok(!/\sKG/.test(dailySummaryWxml), 'daily summary card should not show uppercase KG copy');
+assert.ok(/summaryMaxWeightLabel/.test(dailySummaryWxml), 'daily summary card should render 100kg-style primary weight');
+assert.ok(/row-set-count/.test(dailySummaryWxml), 'daily summary rows should render set count on the left of row stats');
+assert.ok(/row-weight/.test(dailySummaryWxml), 'daily summary rows should render weight on the right of row stats');
+assert.ok(/pr-chip-edge/.test(dailySummaryWxml), 'daily summary rows should render PR on the outer edge');
+assert.ok(/featuredExercises/.test(dailySummaryWxml), 'daily summary card should render featured exercises');
+assert.ok(/hasMoreFeaturedExercises/.test(dailySummaryWxml), 'daily summary card should render ellipsis state');
+assert.ok(/今日明细/.test(dailySummaryWxml), 'daily summary card should keep detail section label');
 
 console.log('all tests passed');

@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FitSync 产品设计与技术开发路线</title>
+  <style>
+    :root {
+      --bg: #050706;
+      --panel: #0b0f0d;
+      --panel-2: #101511;
+      --line: #223027;
+      --text: #f4f6f4;
+      --muted: #9aa59d;
+      --soft: #68736c;
+      --green: #00ff66;
+      --green-soft: rgba(0, 255, 102, 0.12);
+      --amber: #f3b23d;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top right, rgba(0, 255, 102, 0.1), transparent 28%), var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.7;
+    }
+
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    header {
+      min-height: 74vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow,
+    .kicker,
+    .mono {
+      font-family: Menlo, Consolas, monospace;
+      letter-spacing: 0.12em;
+    }
+
+    .eyebrow {
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    h1 {
+      margin: 18px 0 20px;
+      max-width: 900px;
+      font-size: clamp(44px, 8vw, 92px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .hero-copy {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 20px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 34px;
+      max-width: 920px;
+    }
+
+    .metric,
+    .card,
+    .phase {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(0, 255, 102, 0.04), var(--panel));
+      border-radius: 8px;
+    }
+
+    .metric {
+      padding: 18px;
+    }
+
+    .metric strong {
+      display: block;
+      color: var(--green);
+      font-size: 28px;
+      line-height: 1.1;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 8px;
+      color: var(--soft);
+      font-size: 13px;
+    }
+
+    section {
+      padding: 48px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 30px;
+      line-height: 1.2;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0 0 14px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .card {
+      padding: 20px;
+    }
+
+    .card.done {
+      border-color: rgba(0, 255, 102, 0.42);
+    }
+
+    .card.next {
+      border-color: rgba(243, 178, 61, 0.45);
+      background: linear-gradient(180deg, rgba(243, 178, 61, 0.08), var(--panel));
+    }
+
+    .tag {
+      display: inline-flex;
+      margin-bottom: 12px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--green);
+      color: #031006;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .tag.amber {
+      background: var(--amber);
+      color: #160f02;
+    }
+
+    .tag.dim {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--muted);
+    }
+
+    ul {
+      margin: 12px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+
+    li {
+      margin: 7px 0;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .phase {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 18px;
+    }
+
+    .phase b {
+      color: var(--green);
+    }
+
+    .summary-card {
+      margin-top: 24px;
+      max-width: 440px;
+      aspect-ratio: 4 / 5;
+      padding: 28px;
+      border: 1px solid #26352c;
+      background: #080a09;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 0 40px rgba(0, 255, 102, 0.08);
+    }
+
+    .summary-top,
+    .summary-row,
+    .summary-foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .summary-number {
+      font-size: 58px;
+      line-height: 0.9;
+      font-weight: 900;
+      color: var(--green);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+    }
+
+    .bar {
+      height: 12px;
+      background: #2c332f;
+    }
+
+    .bar.on {
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(0, 255, 102, 0.38);
+    }
+
+    .small {
+      color: var(--soft);
+      font-size: 13px;
+    }
+
+    @media (max-width: 760px) {
+      .metrics,
+      .grid,
+      .phase {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        min-height: auto;
+        padding: 56px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="eyebrow">FITSYNC PRODUCT / TECH ROADMAP</div>
+      <h1>把训练记录做成低打扰的小程序产品</h1>
+      <p class="hero-copy">FitSync 的核心不是把健身房变成表格，而是在训练中尽量少让用户思考，训练后给用户一张愿意保存、愿意回看的总结卡。</p>
+      <div class="metrics">
+        <div class="metric"><strong>Phase 4F</strong><span>当前阶段</span></div>
+        <div class="metric"><strong>75%</strong><span>本地 MVP 完成度</span></div>
+        <div class="metric"><strong>黑绿</strong><span>当前视觉方向</span></div>
+        <div class="metric"><strong>原生</strong><span>微信小程序架构</span></div>
+      </div>
+    </header>
+
+    <section>
+      <h2>产品定位</h2>
+      <p>FitSync 是一个面向真实力量训练场景的专注记录工具。用户不是坐在桌前录数据，而是在喘气、出汗、组间休息、注意力很有限的时候记录训练。</p>
+      <div class="grid">
+        <div class="card done">
+          <span class="tag">训练中</span>
+          <h3>少操作</h3>
+          <p>练完一组后，用大按钮和延迟确认完成记录，默认复用上一组重量次数，减少输入负担。</p>
+        </div>
+        <div class="card done">
+          <span class="tag">训练后</span>
+          <h3>有仪式感</h3>
+          <p>把当天多动作聚合成黑绿总结卡，重点突出最重重量、正式组数、动作数和训练连续性。</p>
+        </div>
+        <div class="card done">
+          <span class="tag">长期</span>
+          <h3>能回看</h3>
+          <p>历史记录、今日明细、PR 标记和 28 天活动格子，为后续趋势和计划系统打基础。</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>我们形成的交互原则</h2>
+      <p>这个产品不是一次性想出来的，而是在每轮小程序体验后逐步收窄：先保证训练主链路，再补动作库，再做总结卡，最后把“表格感”削掉。</p>
+      <ul>
+        <li>训练中优先单手操作，大按钮比密集表单更重要。</li>
+        <li>记录动作发生在“练完之后”，所以文案要克制，不再用 FIGHT 这种开始训练语气。</li>
+        <li>重量和次数必须可直接输入，同时保留步进按钮。</li>
+        <li>热身组不推进正式组数，也不参与容量、最大重量和 PR。</li>
+        <li>撤销、防漏记、休息结束提醒都要低打扰，不能破坏训练节奏。</li>
+        <li>总结卡要像打卡作品，不像后台报表；该大的是结果，不是字段名。</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>当前黑绿总结卡方向</h2>
+      <p>Phase 4F 的重点是把卡片语言收干净：重量直接显示成 100kg，动作行只保留组数、重量和精致 PR 小标。完整表格信息放在下方今日明细，不抢卡片第一屏。</p>
+      <div class="summary-card">
+        <div class="summary-top">
+          <div>
+            <div class="mono small">DAY.023</div>
+            <div>胸 / 背</div>
+          </div>
+          <div class="mono small">2026.05.23<br>FRIDAY</div>
+        </div>
+        <div>
+          <div class="small">今日最重</div>
+          <div class="summary-number">100kg</div>
+        </div>
+        <div class="summary-grid">
+          <div class="bar"></div><div class="bar on"></div><div class="bar"></div><div class="bar on"></div>
+          <div class="bar on"></div><div class="bar"></div><div class="bar"></div><div class="bar on"></div>
+          <div class="bar"></div><div class="bar on"></div><div class="bar on"></div><div class="bar"></div>
+        </div>
+        <div>
+          <div class="summary-row"><span>杠铃卧推</span><span class="mono">3  100kg  PR</span></div>
+          <div class="summary-row"><span>坐姿划船</span><span class="mono">4  70kg</span></div>
+        </div>
+        <div class="summary-foot mono small"><span>QUIET WORK</span><span>FitSync</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>技术架构</h2>
+      <p>当前使用原生微信小程序架构，保持轻量，不引入 Taro、TypeScript、UI 库或云开发。数据先走本地 storage，把核心训练体验跑稳后，再考虑账号和云同步。</p>
+      <div class="grid">
+        <div class="card">
+          <span class="tag dim">数据</span>
+          <h3>本地记录</h3>
+          <p>训练记录、当前会话、休息时间、自定义动作和预设动作个人默认值都保存在本地。</p>
+        </div>
+        <div class="card">
+          <span class="tag dim">逻辑</span>
+          <h3>纯函数优先</h3>
+          <p>训练会话和每日聚合放在工具层，页面只负责状态映射和展示，方便测试和回退。</p>
+        </div>
+        <div class="card">
+          <span class="tag dim">页面</span>
+          <h3>训练 / 记录 / 总结</h3>
+          <p>训练页负责主链路，记录页负责历史回看，今日总结卡负责截图和分享友好的展示。</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>总规划路线</h2>
+      <div class="timeline">
+        <div class="phase">
+          <b>Phase 1-2</b>
+          <p>训练记录 MVP：动作选择、开始设置、延迟记录、撤销、休息提醒、防漏记、上一组面板。</p>
+        </div>
+        <div class="phase">
+          <b>Phase 3</b>
+          <p>动作库产品化：六大分类、核心动作、常用动作、自定义动作、预设动作个人默认值。</p>
+        </div>
+        <div class="phase">
+          <b>Phase 4</b>
+          <p>今日总结卡：按天聚合多动作记录，黑绿 Carbon 风格，PR、今日明细、28 天活动格子。</p>
+        </div>
+        <div class="phase">
+          <b>Phase 4F</b>
+          <p>当前阶段：把总结卡从数据表感精修成打卡卡片感，统一组数、重量和 PR 小标表达。</p>
+        </div>
+        <div class="phase">
+          <b>Phase 5</b>
+          <p>训练结果产品化：截图保存、分享卡、周/月统计、动作进步趋势、PR 时间线。</p>
+        </div>
+        <div class="phase">
+          <b>Phase 6+</b>
+          <p>完整小程序产品：训练计划、账号体系、云同步、数据备份、发布审核和真实用户反馈迭代。</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>离完整小程序还差多远</h2>
+      <p>如果目标是“自己能稳定使用的本地 MVP”，现在已经接近完成；如果目标是“可发布、可长期运营的小程序产品”，还需要大约三块工作。</p>
+      <div class="grid">
+        <div class="card next">
+          <span class="tag amber">还差 1</span>
+          <h3>展示闭环</h3>
+          <p>总结卡截图保存、分享样式、统计页和 PR 回看，把训练结果做得更有回报感。</p>
+        </div>
+        <div class="card next">
+          <span class="tag amber">还差 2</span>
+          <h3>长期训练结构</h3>
+          <p>训练计划、动作模板、周期安排和更完整动作库，让用户不是每次从零开始选动作。</p>
+        </div>
+        <div class="card next">
+          <span class="tag amber">还差 3</span>
+          <h3>上线能力</h3>
+          <p>微信登录、云端同步、错误处理、隐私说明、真机测试和小程序发布材料。</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
