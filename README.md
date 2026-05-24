@@ -155,4 +155,48 @@ open http://localhost:3000
 
 ---
 
-*Built with Next.js 16, TypeScript, Tailwind CSS, Framer Motion, lucide-react.*
+*Built with 微信小程序原生框架 (WeChat Mini Program Native Framework).*
+
+## 版本历史
+
+### Phase 4F — 今日总结卡视觉精修 + 个人默认值覆盖（当前版本）
+
+**今日总结卡视觉精修：**
+
+- 主重量从 `VOLUME(KG)` / 裸数字改为 `100kg` 风格（`今日最重` 标签 + 数值 + `kg` 后缀）。
+- 顶部指标行改为：今日最重 / 动作 / 时长 / 正式组，去掉 `MAX`、`SETS`、大写 `KG` 等表格感文案。
+- Featured 动作行改为 `组数 / 重量 / PR 小标` 三列网格布局，等宽字体对齐。
+- 新增"今日明细"区域：按天聚合每个动作的正式组数、最重、PR，使用与 Featured 一致的视觉表达。
+- 超过 2 个动作时，Featured 区域展示黑绿点状省略号。
+
+**PR 逻辑修正：**
+
+- 只有该动作存在历史正式组，且今天正式组最大重量严格大于历史最大重量，才标记 PR。
+- 热身组完全排除在最大重量和 PR 判断之外（`isWarmup` 过滤）。
+- 新增 `getExerciseHistoricalMaxWeight()` 计算严格在目标日期之前的历史最大重量。
+
+**Featured 排序规则（`selectFeaturedExercises`）：**
+
+- 有 PR 时：PR 动作优先排在第一位，第二位从剩余动作中选最大重量最高的。
+- 无 PR 时：选最大重量最高的两个动作。
+- 同重量 PR 冲突时按重量降序，确保语义一致。
+
+**预设动作个人默认值覆盖：**
+
+- 开始训练 Sheet 新增默认重量 ±2.5kg 步进器和默认次数 ±1 步进器。
+- 新增"保存为我的默认"开关（`saveAsDefault`），一键将当前目标组数/默认重量/默认次数写入本地存储。
+- 存储 key `exercise_overrides`，支持读取、写入、规范化（组数 1-10、重量 ≥0、次数 ≥1）。
+- 训练页选择动作时自动通过 `applyExerciseOverrides` 应用覆盖值。
+- 休息时间选项增加 300 秒（5 分钟）。
+
+**测试覆盖：**
+
+- 新增 `buildRecordDays` 测试：多天聚合、PR 判断（有历史/无历史/等重/热身组）、空记录边界。
+- 新增 `getExerciseHistoricalMaxWeight` 测试：跨天历史最大、热身组排除、无正式组历史。
+- 新增 Featured 排序规则测试：有 PR 优先、无 PR 按重量、3+ 动作触发省略号。
+- 新增 Exercise Overrides 测试：覆盖写入/读取/应用、值规范化、空/null 边界。
+- 新增 WXML/JS 源码检查断言，确保 `MAX(KG)`、`SETS`、大写 `KG` 等旧文案已清除。
+
+**产品文档：**
+
+- 新增 `FitSync_PRODUCT_TECH_ROADMAP.html`：产品设计与技术路线文档。
