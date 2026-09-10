@@ -29,6 +29,10 @@ const {
   buildDailySummary
 } = require('../../utils/dailySummary');
 
+const analytics = require('../../services/analytics');
+const share = require('../../services/share');
+const subscription = require('../../services/subscription');
+
 const CONFIRM_HOLD_MS = 1500;
 const UNDO_TOAST_SECONDS = 3;
 const MISSED_SET_MS = 120 * 1000;
@@ -148,6 +152,14 @@ Page({
       return;
     }
 
+    // 恢复进行中的训练:onHide 时计时器已停止,这里基于 restEndTime 时间戳
+    // 重算剩余休息并重启计时器;若离开期间休息已结束,则直接回到训练态。
+    // 覆盖场景:切 tab、跳转其他页面、退后台、锁屏后返回。
+    // (仅限 training/resting 态;summary 态有自己的流转,不能被打回训练)
+    if (this.data.session && (this.data.state === 'training' || this.data.state === 'resting')) {
+      this.enterTraining(this.data.session);
+    }
+
     // Refresh custom exercises when returning from exercise-form page
     const customExercises = getCustomExercises();
     this.setData({ customExercises });
@@ -156,6 +168,10 @@ Page({
   },
 
   onHide() {
+    // 切走时停表(隐藏页面不再 setData,省资源)。
+    // 契约:onShow 必须调用 enterTraining 恢复 —— 计时基于 restEndTime
+    // 时间戳重算,离开多久都不丢精度。删掉 onShow 的恢复逻辑会导致
+    // 组间计时在切走后冻结。
     this.stopRestTimer();
     this.stopMissedSetTimer();
   },
@@ -721,6 +737,13 @@ Page({
     this.confirmCommitted = false;
     this.stopMissedSetTimer();
 
+    // 每记录一组都埋点,用于组级漏斗分析
+    analytics.track(analytics.EVENTS.SET_CONFIRMED, {
+      exercise: session.exerciseName,
+      setNumber: latestSet ? latestSet.setNumber : 0,
+      isWarmup: !!sheetIsWarmup
+    });
+
     if (updated.completedAt) {
       this.stopRestTimer();
       const record = createRecord(updated);
@@ -728,6 +751,16 @@ Page({
       clearSession();
       this.startUndoToast(latestSet);
       const todaySummary = buildDailySummary(getRecords(), Date.now());
+
+      // 训练完成 <-- 情绪峰值:埋点 + 云端同步 + 订阅引导
+      analytics.track(analytics.EVENTS.SESSION_COMPLETE, {
+        exercise: record.exerciseName,
+        category: record.categoryName,
+        sets: record.totalSets,
+        durationMinutes: Math.round((record.completedAt - record.startedAt) / 60000)
+      });
+      this.uploadRecordQuietly(record);
+      this.requestRemindAfterTraining();
 
       this.setData({
         state: 'summary',
@@ -962,9 +995,70 @@ Page({
     this.onFinishSummary();
   },
 
+  /* ============ 上线基建:同步 / 订阅 / 分享 ============ */
+
+  /**
+   * 训练完成后静默上传云端
+   * 全程无感:失败自动进重试队列,不弹任何提示
+   */
+  uploadRecordQuietly(record) {
+    try {
+      const sync = require('../../services/sync');
+      sync.uploadRecord(record);
+    } catch (e) {
+      // 同步模块任何异常都不能影响训练主流程
+    }
+  },
+
+  /**
+   * 训练完成后请求订阅消息授权
+   *
+   * 时机:用户刚完成一次完整的主动点击,既满足微信「用户主动触发」规则,
+   *       又处于成就感峰值,授权转化率最高。
+   * 节流:7 天内不重复打扰,避免消耗用户耐心。
+   */
+  requestRemindAfterTraining() {
+    const THROTTLE_MS = 7 * 24 * 60 * 60 * 1000;
+    const lastAt = Number(wx.getStorageSync('last_subscribe_request_at')) || 0;
+
+    if (Date.now() - lastAt < THROTTLE_MS) return;
+
+    wx.setStorageSync('last_subscribe_request_at', Date.now());
+
+    subscription.requestSubscribe().then(function (accepted) {
+      analytics.track(analytics.EVENTS.SUBSCRIBE_REQUEST, {
+        accepted: accepted.length
+      });
+    });
+  },
+
+  onShareAppMessage() {
+    const summary = this.data.summary;
+    if (!summary) {
+      return share.buildHomeShare();
+    }
+
+    // 借用当日汇总的 PR 标记,让分享话术能正确走「破纪录」文案
+    const record = Object.assign({}, summary, {
+      isWeightPr: !!(this.data.todaySummary && this.data.todaySummary.hasWeightPr)
+    });
+
+    return share.buildTrainingShare(record);
+  },
+
+  onShareTimeline() {
+    return share.buildTimelineSummary(this.data.todaySummary);
+  },
+
   decorateRecord(record) {
+    const formalSets = (record.sets || []).filter((set) => !set.isWarmup);
+    const maxWeight = formalSets.length
+      ? Math.max.apply(null, formalSets.map((set) => Number(set.weight) || 0))
+      : 0;
+
     return {
       ...record,
+      maxWeight,
       sets: record.sets.map((set) => ({
         ...set,
         setLabel: this.getSetLabel(set)

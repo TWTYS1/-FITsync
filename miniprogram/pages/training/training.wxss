@@ -828,7 +828,8 @@
   z-index: 101;
   transform: translateY(100%);
   transition: transform 0.3s ease;
-  padding-bottom: env(safe-area-inset-bottom);
+  /* 安全区:基础 48rpx + 底部安全区(刘海屏/Home条),无安全区机型回落为 48rpx */
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
 }
 
 .sheet-open {
@@ -984,4 +985,19 @@
   color: var(--accent);
   font-weight: 800;
   font-size: 34rpx;
+}
+
+/* ===== 宽屏适配(iPad / 折叠屏展开态) =====
+   fixed 元素相对视口定位,不受 app.wxss 中 page 的 max-width 约束;
+   这里把它们收进与内容同宽的居中窄栏(560px),遮罩保持全屏。 */
+@media (min-width: 600px) {
+  .sheet {
+    left: calc(50% - 280px);
+    right: calc(50% - 280px);
+  }
+
+  .floating-toast {
+    left: calc(50% - 280px + 14px);
+    right: calc(50% - 280px + 14px);
+  }
 }
