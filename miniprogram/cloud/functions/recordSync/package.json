@@ -1,0 +1,9 @@
+{
+  "name": "recordSync",
+  "version": "1.0.0",
+  "description": "组间记训练记录同步云函数 - pull/push/delete,基于 recordId 幂等",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

@@ -8,7 +8,16 @@ const KEYS = {
   TRAINING_RECORDS: 'training_records',
   REST_DURATION_SECONDS: 'rest_duration_seconds',
   CUSTOM_EXERCISES: 'custom_exercises',
-  EXERCISE_OVERRIDES: 'exercise_overrides'
+  EXERCISE_OVERRIDES: 'exercise_overrides',
+
+  // ---- 上线基建新增 ----
+  ACCESS_TOKEN: 'access_token',
+  REFRESH_TOKEN: 'refresh_token',
+  USER_INFO: 'user_info',
+  LOCAL_GUEST_ID: 'local_guest_id',
+  AGREEMENT_ACCEPTED: 'agreement_accepted',
+  SYNC_QUEUE: 'sync_queue',
+  LAST_SYNC_AT: 'last_sync_at'
 };
 
 const DEFAULT_REST_DURATION_SECONDS = 90;
@@ -164,7 +173,102 @@ function applyExerciseOverrides(exercises) {
   });
 }
 
+/* ================================================================
+ * 用户态 — 上线基建新增
+ * ================================================================ */
+
+function getToken() {
+  return wx.getStorageSync(KEYS.ACCESS_TOKEN) || '';
+}
+
+function setToken(token, refreshToken) {
+  wx.setStorageSync(KEYS.ACCESS_TOKEN, token || '');
+  if (refreshToken) {
+    wx.setStorageSync(KEYS.REFRESH_TOKEN, refreshToken);
+  }
+}
+
+function clearToken() {
+  wx.removeStorageSync(KEYS.ACCESS_TOKEN);
+  wx.removeStorageSync(KEYS.REFRESH_TOKEN);
+}
+
+function getUserInfo() {
+  return wx.getStorageSync(KEYS.USER_INFO) || null;
+}
+
+function setUserInfo(user) {
+  wx.setStorageSync(KEYS.USER_INFO, user || null);
+}
+
+/**
+ * 本地匿名用户标识
+ * 用于「云能力不可用」时仍能稳定标识一台设备上的使用者,
+ * 保证同步队列等逻辑有可用的身份键。
+ */
+function getOrCreateLocalGuestId() {
+  let guestId = wx.getStorageSync(KEYS.LOCAL_GUEST_ID);
+  if (!guestId) {
+    guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+    wx.setStorageSync(KEYS.LOCAL_GUEST_ID, guestId);
+  }
+  return guestId;
+}
+
+/**
+ * 隐私协议是否已同意
+ */
+function isAgreementAccepted() {
+  return !!wx.getStorageSync(KEYS.AGREEMENT_ACCEPTED);
+}
+
+function getAgreementRecord() {
+  return wx.getStorageSync(KEYS.AGREEMENT_ACCEPTED) || null;
+}
+
+/* ================================================================
+ * 同步队列 — 失败重试
+ * ================================================================ */
+
+function getSyncQueue() {
+  return wx.getStorageSync(KEYS.SYNC_QUEUE) || [];
+}
+
+function setSyncQueue(queue) {
+  wx.setStorageSync(KEYS.SYNC_QUEUE, queue || []);
+}
+
+function enqueueSync(task) {
+  const queue = getSyncQueue();
+  // 同一 recordId 去重,避免重复堆积
+  const exists = queue.some(function (item) {
+    return item.recordId && task.recordId && item.recordId === task.recordId;
+  });
+  if (exists) return queue;
+
+  queue.push(Object.assign({ createdAt: Date.now(), retryCount: 0 }, task));
+  setSyncQueue(queue);
+  return queue;
+}
+
+function removeSyncTask(recordId) {
+  const queue = getSyncQueue().filter(function (item) {
+    return item.recordId !== recordId;
+  });
+  setSyncQueue(queue);
+  return queue;
+}
+
+function getLastSyncAt() {
+  return Number(wx.getStorageSync(KEYS.LAST_SYNC_AT)) || 0;
+}
+
+function setLastSyncAt(timestamp) {
+  wx.setStorageSync(KEYS.LAST_SYNC_AT, timestamp || Date.now());
+}
+
 module.exports = {
+  KEYS,
   saveSession,
   getSession,
   clearSession,
@@ -182,5 +286,23 @@ module.exports = {
   getExerciseOverride,
   saveExerciseOverride,
   applyExerciseOverride,
-  applyExerciseOverrides
+  applyExerciseOverrides,
+
+  // 用户态
+  getToken,
+  setToken,
+  clearToken,
+  getUserInfo,
+  setUserInfo,
+  getOrCreateLocalGuestId,
+  isAgreementAccepted,
+  getAgreementRecord,
+
+  // 同步队列
+  getSyncQueue,
+  setSyncQueue,
+  enqueueSync,
+  removeSyncTask,
+  getLastSyncAt,
+  setLastSyncAt
 };

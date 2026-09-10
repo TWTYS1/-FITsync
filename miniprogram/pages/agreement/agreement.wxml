@@ -1,0 +1,43 @@
+<view class="container">
+  <!-- Tab 切换 -->
+  <view class="tabs">
+    <view
+      class="tab {{tab === 'privacy' ? 'active' : ''}}"
+      data-tab="privacy"
+      bindtap="onSwitchTab"
+    >隐私政策</view>
+    <view
+      class="tab {{tab === 'terms' ? 'active' : ''}}"
+      data-tab="terms"
+      bindtap="onSwitchTab"
+    >用户协议</view>
+  </view>
+
+  <!-- 协议正文 -->
+  <scroll-view class="content" scroll-y enable-flex>
+    <view class="updated">更新日期 {{updatedAt}}</view>
+
+    <view
+      class="section"
+      wx:for="{{sections}}"
+      wx:for-item="section"
+      wx:key="title"
+    >
+      <view class="section-title">{{section.title}}</view>
+      <view
+        class="para"
+        wx:for="{{section.paragraphs}}"
+        wx:for-item="para"
+        wx:key="*this"
+      >{{para}}</view>
+    </view>
+
+    <view class="tail">— 组间记团队 —</view>
+    <view class="bottom-space"></view>
+  </scroll-view>
+
+  <!-- 仅首次启动时展示 -->
+  <view class="footer" wx:if="{{fromLaunch}}">
+    <button class="btn-agree" bindtap="onAgree">我已阅读并同意</button>
+  </view>
+</view>

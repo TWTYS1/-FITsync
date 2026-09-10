@@ -1,0 +1,9 @@
+{
+  "name": "dailyRemind",
+  "version": "1.0.0",
+  "description": "组间记每日训练提醒 - 定时触发的订阅消息下发",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
