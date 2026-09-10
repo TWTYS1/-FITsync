@@ -78,13 +78,13 @@
         </view>
         <view class="brand">
           <text class="brand-mark">FS</text>
-          <text class="brand-text">FitSync</text>
+          <text class="brand-text">组间记</text>
         </view>
       </view>
     </view>
 
     <view class="hint-row">
-      <text>截图保存这张今日训练卡</text>
+      <text>截图保存这份今日总结</text>
     </view>
 
     <view wx:if="{{hasRecords}}" class="details-section">

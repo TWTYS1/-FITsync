@@ -1,7 +1,7 @@
 <view class="container">
   <!-- Header -->
   <view class="header">
-    <text class="brand">FitSync</text>
+    <text class="brand">组间记</text>
     <text class="subtitle">专注每一次训练</text>
   </view>
 

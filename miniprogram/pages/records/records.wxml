@@ -12,7 +12,7 @@
       <text class="daily-meta">{{todaySummary.totalVolume}} kg · {{todaySummary.totalDurationMinutes}} 分钟</text>
     </view>
     <view class="daily-action">
-      <text>查看今日卡</text>
+      <text>查看今日总结</text>
       <text class="daily-arrow">→</text>
     </view>
   </view>

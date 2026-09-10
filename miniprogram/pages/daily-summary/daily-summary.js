@@ -1,5 +1,7 @@
 const { getRecords } = require('../../utils/storage');
 const { buildDailySummary, buildRecordDays } = require('../../utils/dailySummary');
+const share = require('../../services/share');
+const analytics = require('../../services/analytics');
 
 Page({
   data: {
@@ -102,6 +104,19 @@ Page({
         wx.switchTab({ url: '/pages/training/training' });
       }
     });
+  },
+
+  /* ============ 分享:今日总结是最强的拉新素材 ============ */
+
+  onShareAppMessage() {
+    analytics.track(analytics.EVENTS.RECORD_SHARED, {
+      source: 'daily_summary'
+    });
+    return share.buildDailySummaryShare(this.data.summary);
+  },
+
+  onShareTimeline() {
+    return share.buildTimelineSummary(this.data.summary);
   }
 });
 

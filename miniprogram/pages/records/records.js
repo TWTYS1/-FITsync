@@ -1,5 +1,6 @@
 const { getRecords } = require('../../utils/storage');
 const { buildDailySummary, buildRecordDays } = require('../../utils/dailySummary');
+const share = require('../../services/share');
 
 Page({
   data: {
@@ -40,6 +41,19 @@ Page({
     this.setData({
       expandedDateKey: this.data.expandedDateKey === dateKey ? '' : dateKey
     });
+  },
+
+  /* ============ 分享 ============ */
+
+  onShareAppMessage() {
+    return share.buildRecordsShare();
+  },
+
+  onShareTimeline() {
+    return {
+      title: '我的力量训练记录都在「组间记」',
+      query: 'from=timeline&scene=records'
+    };
   }
 });
 

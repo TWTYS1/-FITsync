@@ -23,10 +23,10 @@
         <text wx:if="{{hasTodaySummary}}" class="today-title">{{todaySummary.exerciseCount}} 个动作 · {{todaySummary.totalSets}} 组</text>
         <text wx:else class="today-title">还没有记录</text>
         <text wx:if="{{hasTodaySummary}}" class="today-meta">{{todaySummary.totalVolume}} kg · {{todaySummary.totalDurationMinutes}} 分钟</text>
-        <text wx:else class="today-meta">完成动作后会生成黑绿今日卡</text>
+        <text wx:else class="today-meta">训练结束后会生成今日总结</text>
       </view>
       <view class="today-action">
-        <text wx:if="{{hasTodaySummary}}" class="today-action-text">查看今日卡</text>
+        <text wx:if="{{hasTodaySummary}}" class="today-action-text">查看今日总结</text>
         <text wx:else class="today-action-text muted">待生成</text>
         <text class="today-arrow">→</text>
       </view>
@@ -223,7 +223,7 @@
 
     <view class="summary-actions">
       <button class="btn-finish btn-secondary" bindtap="onContinueAfterSummary">继续练下一个动作</button>
-      <button class="btn-finish" bindtap="onOpenTodaySummary">查看今日卡</button>
+      <button class="btn-finish" bindtap="onOpenTodaySummary">查看今日总结</button>
     </view>
   </view>
 
