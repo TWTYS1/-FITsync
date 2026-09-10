@@ -39,6 +39,16 @@ yarn-error.log*
 # wechat miniprogram
 miniprogram/project.private.config.json
 
+# AI 助手会话数据(本地保留,不入库)
+.workbuddy/
+.superpowers/
+
+# Office 打开时的临时锁文件
+~$*
+
+# 归档包
+*.zip
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
