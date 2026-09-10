@@ -72,7 +72,20 @@ function run() {
   const dirty = [{ startedAt: 9999, completedAt: 9999 }];
   assert('缺少 id 的记录被丢弃', sync.mergeRecords(dirty, []).length === 0);
 
-  console.log('\n[6] 分享话术生成');
+  console.log('\n[6] 分批推送 chunkArray');
+  assert('10 条按 4 切成 3 批', sync.chunkArray([1,2,3,4,5,6,7,8,9,10], 4).length === 3);
+  assert('首批 4 条,批内顺序不变', JSON.stringify(sync.chunkArray([1,2,3,4,5,6,7,8,9,10], 4)[0]) === '[1,2,3,4]');
+  assert('数量少于批大小时为 1 批', sync.chunkArray([1,2], 20).length === 1);
+  assert('空数组返回空批列表', sync.chunkArray([], 20).length === 0);
+  assert('批大小 0/负数按 1 兜底不崩溃', sync.chunkArray([1,2,3], 0).length === 3);
+
+  console.log('\n[7] 云端载荷 schemaVersion');
+  const payload = sync.toCloudPayload({ id: 'session-123', sets: [] });
+  assert('payload 带 schemaVersion=1', payload.schemaVersion === 1);
+  assert('recordId 与本地 id 一致', payload.recordId === 'session-123');
+  assert('已有 schemaVersion 不被覆盖', sync.toCloudPayload({ id: 'x', schemaVersion: 2 }).schemaVersion === 2);
+
+  console.log('\n[8] 分享话术生成');
   const s1 = share.buildTrainingShare({ id: 'x', exerciseName: '卧推', totalSets: 5, totalVolume: 2400 });
   assert('普通分享含动作名与总容量', s1.title.indexOf('卧推') > -1 && s1.title.indexOf('2400') > -1);
   const s2 = share.buildTrainingShare({ id: 'y', exerciseName: '深蹲', totalSets: 5, totalVolume: 3000, isWeightPr: true });

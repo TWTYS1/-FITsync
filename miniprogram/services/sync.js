@@ -28,11 +28,18 @@ function canSync() {
 }
 
 /**
+ * 记录数据结构版本号
+ * 迁移纪律:只加字段、不改名、不删字段;结构变更时升版本并写迁移逻辑
+ */
+var SCHEMA_VERSION = 1;
+
+/**
  * 本地记录的 id 即云端 recordId,补上字段保证一致
  */
 function toCloudPayload(record) {
   return Object.assign({}, record, {
-    recordId: record.id || record.recordId
+    recordId: record.id || record.recordId,
+    schemaVersion: record.schemaVersion || SCHEMA_VERSION
   });
 }
 
@@ -120,10 +127,30 @@ function uploadRecord(record) {
 }
 
 /**
+ * 把数组切成固定大小的批,纯函数,便于单测
+ */
+function chunkArray(list, size) {
+  const chunks = [];
+  const step = Math.max(1, Number(size) || 1);
+  for (let i = 0; i < (list || []).length; i += step) {
+    chunks.push(list.slice(i, i + step));
+  }
+  return chunks;
+}
+
+/**
  * 重传队列中累积的失败任务
+ *
+ * 分批推送(每批 PUSH_BATCH_SIZE 条):
+ *   云函数对单次 push 是逐条串行 upsert,大批量容易触发云函数超时,
+ *   超时则整批 reject。分批 + 逐批出队,保证:
+ *     - 单批失败不影响已成功的批次
+ *     - 失败批次及其后的任务保留在队列,下次启动重试
  *
  * @returns {Promise<Number>} 成功补传的条数
  */
+var PUSH_BATCH_SIZE = 20;
+
 function flushQueue() {
   const queue = storage.getSyncQueue();
   if (!queue.length) return Promise.resolve(0);
@@ -132,27 +159,44 @@ function flushQueue() {
     return Promise.resolve(0);
   }
 
-  const records = queue.map(function (item) {
-    return item.record;
-  });
+  const batches = chunkArray(queue, PUSH_BATCH_SIZE);
+  let pushedCount = 0;
 
-  return callCloud('recordSync', {
-    action: 'push',
-    records: records
-  }, { silent: true })
-    .then(function (result) {
-      // 队列中的记录已全部尝试写入,成功与否都清空,避免无限重试
-      queue.forEach(function (item) {
-        storage.removeSyncTask(item.recordId);
-      });
-      const upserted = (result && result.upserted) || 0;
-      monitor.info('flush-queue-done', { total: records.length, upserted: upserted });
-      return records.length;
-    })
-    .catch(function (err) {
-      monitor.info('flush-queue-failed', { code: err && err.code });
-      return 0;
+  // 串行逐批推送:某批失败则停止,保留剩余任务在队列中
+  function pushNextBatch(index) {
+    if (index >= batches.length) {
+      return Promise.resolve(pushedCount);
+    }
+
+    const batch = batches[index];
+    const records = batch.map(function (item) {
+      return item.record;
     });
+
+    return callCloud('recordSync', {
+      action: 'push',
+      records: records
+    }, { silent: true })
+      .then(function () {
+        // 仅出队本批任务,失败批次保留
+        batch.forEach(function (item) {
+          storage.removeSyncTask(item.recordId);
+        });
+        pushedCount += records.length;
+        monitor.info('flush-batch-done', { batch: index + 1, count: records.length });
+        return pushNextBatch(index + 1);
+      })
+      .catch(function (err) {
+        monitor.info('flush-batch-failed', {
+          batch: index + 1,
+          remaining: queue.length - pushedCount,
+          code: err && err.code
+        });
+        return Promise.resolve(pushedCount);
+      });
+  }
+
+  return pushNextBatch(0);
 }
 
 /**
@@ -224,17 +268,39 @@ function deleteRecord(recordId) {
  *
  * 建议在 App.onLaunch、页面 onShow、用户登录态切换后调用。
  * 全程异步静默,不阻塞 UI。
+ * 带防重入锁:并发调用直接复用进行中的同步,避免两次 merge 竞写 storage。
  *
  * @returns {Promise<Array>} 合并后的记录列表
  */
+var syncing = false;
+var syncingPromise = null;
+
 function fullSync() {
   if (!canSync()) {
     return Promise.resolve(storage.getRecords());
   }
 
-  return flushQueue().then(function () {
-    return pullAndMerge();
-  });
+  if (syncing) {
+    return syncingPromise;
+  }
+
+  syncing = true;
+  syncingPromise = flushQueue()
+    .then(function () {
+      return pullAndMerge();
+    })
+    .then(function (merged) {
+      syncing = false;
+      syncingPromise = null;
+      return merged;
+    })
+    .catch(function () {
+      syncing = false;
+      syncingPromise = null;
+      return storage.getRecords();
+    });
+
+  return syncingPromise;
 }
 
 /**
@@ -250,6 +316,8 @@ auth.onLoginSuccess(function () {
 module.exports = {
   canSync,
   mergeRecords,
+  chunkArray,
+  toCloudPayload,
   uploadRecord,
   flushQueue,
   pullAndMerge,

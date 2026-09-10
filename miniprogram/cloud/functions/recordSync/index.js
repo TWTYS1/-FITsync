@@ -50,10 +50,12 @@ async function pull(openid, since) {
   }
 
   // 去除 _openid 等服务端字段,只返回客户端需要的数据
+  // 注意:此处为字段白名单,客户端新增字段必须同步加进来,否则 pull 会丢失该字段
   const clean = result.map(function (item) {
     return {
       id: item.recordId,
       recordId: item.recordId,
+      schemaVersion: item.schemaVersion || 1,
       exerciseId: item.exerciseId,
       exerciseName: item.exerciseName,
       categoryName: item.categoryName,
@@ -105,6 +107,7 @@ async function push(openid, records) {
 
     const payload = {
       recordId: record.recordId,
+      schemaVersion: Number(record.schemaVersion) || 1,
       exerciseId: record.exerciseId || '',
       exerciseName: record.exerciseName || '',
       categoryName: record.categoryName || '',
