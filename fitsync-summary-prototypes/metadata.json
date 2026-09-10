@@ -1,0 +1,8 @@
+{
+  "name": "FitSync Summary Prototypes",
+  "description": "Design brainstorm and visual prototypes for FitSync workout summary cards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
