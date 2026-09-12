@@ -51,7 +51,7 @@ Page({
 
   onShareTimeline() {
     return {
-      title: '我的力量训练记录都在「组间记」',
+      title: '我的力量训练记录都在「组间歇PRO」',
       query: 'from=timeline&scene=records'
     };
   }

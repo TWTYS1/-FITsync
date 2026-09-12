@@ -1,5 +1,5 @@
 /**
- * 组间记登录云函数
+ * 组间歇PRO登录云函数
  *
  * 云开发优势:可通过 cloud.getWXContext() 直接拿到 OPENID,
  * 无需像传统方案那样用 code + appid + secret 换取 openid,

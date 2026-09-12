@@ -109,7 +109,7 @@ Page({
 
   onShareTimeline() {
     return {
-      title: '组间记 — 一次点击完成训练记录',
+      title: '组间歇PRO — 一次点击完成训练记录',
       query: 'from=timeline'
     };
   }
