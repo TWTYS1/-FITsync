@@ -39,6 +39,9 @@ yarn-error.log*
 # wechat miniprogram
 miniprogram/project.private.config.json
 
+# 云开发本地容器调试产物(CloudBase CLI 生成,含本机调试状态)
+miniprogram/.cloudbase/
+
 # AI 助手会话数据(本地保留,不入库)
 .workbuddy/
 .superpowers/

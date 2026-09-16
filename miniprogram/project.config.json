@@ -44,9 +44,10 @@
     "disableSWC": true
   },
   "compileType": "miniprogram",
-  "libVersion": "3.7.0",
-  "appid": "wxef21dc713b94bfb5",
+  "libVersion": "3.16.0",
+  "appid": "wxd8c2fddfb3df5b02",
   "projectname": "fitsync-miniprogram",
+  "cloudfunctionRoot": "cloud/functions/",
   "condition": {
     "search": {
       "list": []
