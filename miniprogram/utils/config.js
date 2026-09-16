@@ -9,20 +9,20 @@
 
 const CONFIG = {
   develop: {
-    // TODO:填入你的云开发环境 ID,留空则自动降级为纯本地模式
-    cloudEnv: '',
+    // 留空则自动降级为纯本地模式（同步关闭，训练主流程仍完整可用）
+    cloudEnv: 'cloud1-d3ge24pupefa5d3b1',
     enableLog: true,
     enableAnalytics: false,
     requestTimeout: 10000
   },
   trial: {
-    cloudEnv: '',
+    cloudEnv: 'cloud1-d3ge24pupefa5d3b1',
     enableLog: true,
     enableAnalytics: true,
     requestTimeout: 10000
   },
   release: {
-    cloudEnv: '',
+    cloudEnv: 'cloud1-d3ge24pupefa5d3b1',
     enableLog: false,
     enableAnalytics: true,
     requestTimeout: 8000

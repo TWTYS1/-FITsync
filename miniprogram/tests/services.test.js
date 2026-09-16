@@ -9,6 +9,16 @@
 
 // 有状态的 storage mock:模拟真实 wx.storage 的读写行为
 const store = {};
+
+// ---------- 可控 mock 开关 ----------
+// 目的:让测试「显式控制」云可用性,而不是依赖 config.js 里 cloudEnv 是否被填写。
+// 否则一旦开发者填入真实环境 ID,本文件对降级链路的验证就全部失效。
+let cloudEnabled = false;        // 模拟 config.isCloudEnabled()
+let wxLoginShouldFail = false;   // 模拟 wx.login 调用失败
+let wxLoginReturnsCode = true;   // 模拟 wx.login 是否返回 code
+let cloudCallShouldFail = true;  // 模拟云函数未部署 / 调用失败
+let wxLoginCallCount = 0;
+
 global.wx = {
   getStorageSync: (key) => (key in store ? store[key] : ''),
   setStorageSync: (key, value) => { store[key] = value; },
@@ -18,9 +28,44 @@ global.wx = {
   getLogManager: () => null,
   onNetworkStatusChange: () => {},
   getNetworkType: () => {},
-  login: () => { throw new Error('guest 模式不应触发 wx.login'); },
+  login: function (opts) {
+    wxLoginCallCount++;
+    opts = opts || {};
+    if (wxLoginShouldFail) {
+      opts.fail && opts.fail({ errMsg: 'login:fail mock' });
+      return;
+    }
+    opts.success && opts.success(wxLoginReturnsCode ? { code: 'mock-code' } : {});
+  },
   cloud: undefined
 };
+
+// 在 require 业务模块之前注入受控 mock,确保 auth.js 拿到的一定是本文件的版本
+function injectMock(id, exports) {
+  const p = require.resolve(id);
+  require.cache[p] = { id: p, filename: p, loaded: true, exports: exports, children: [], paths: [] };
+}
+
+injectMock('../utils/config', {
+  getConfig: () => ({
+    env: 'release',
+    cloudEnv: cloudEnabled ? 'mock-env-id' : '',
+    enableCloud: cloudEnabled,
+    enableLog: false,
+    enableAnalytics: false,
+    requestTimeout: 8000
+  }),
+  isCloudEnabled: () => cloudEnabled,
+  getCurrentEnvKey: () => 'release',
+  getAppVersion: () => '0.0.0'
+});
+
+injectMock('../utils/request', {
+  callCloud: () => (cloudCallShouldFail
+    ? Promise.reject(new Error('云函数未部署'))
+    : Promise.resolve({ openid: 'mock-openid', token: 'mock-token' })),
+  request: () => Promise.reject(new Error('mock request'))
+});
 
 const auth = require('../services/auth');
 const storage = require('../utils/storage');
@@ -45,12 +90,48 @@ function ts(y, m, d, hour, min) {
 }
 
 async function run() {
-  console.log('\n[1] 登录降级:云未配置时永不失败');
-  const user = await auth.ensureLogin();
-  assert('ensureLogin resolve 而非 reject', !!user);
-  assert('降级为 guest 用户', user.isGuest === true);
+  console.log('\n[1] 登录降级:云不可用时永不失败');
+
+  // 场景 A:云未配置(cloudEnv 为空)—— 连 wx.login 都不该碰
+  cloudEnabled = false;
+  const loginCountBefore = wxLoginCallCount;
+  const user = await auth.ensureLogin(true);
+  assert('场景A ensureLogin resolve 而非 reject', !!user);
+  assert('场景A 降级为 guest 用户', user.isGuest === true);
+  assert('场景A 未触发 wx.login', wxLoginCallCount === loginCountBefore);
   assert('guest 有稳定 id(非空字符串)', typeof user.id === 'string' && user.id.length > 0);
   assert('isRealUser 对 guest 返回 false', auth.isRealUser() === false);
+
+  // 场景 B:云已配置,但 wx.login 失败
+  cloudEnabled = true;
+  wxLoginShouldFail = true;
+  storage.setUserInfo(null);
+  const userB = await auth.ensureLogin(true);
+  assert('场景B wx.login 失败仍 resolve', !!userB);
+  assert('场景B 降级为 guest', userB.isGuest === true);
+
+  // 场景 C:云已配置、wx.login 成功,但云函数未部署 / 调用失败
+  //   这是「已填环境 ID 但尚未部署云函数」的真实中间态,必须照样能开始训练
+  wxLoginShouldFail = false;
+  wxLoginReturnsCode = true;
+  cloudCallShouldFail = true;
+  storage.setUserInfo(null);
+  const userC = await auth.ensureLogin(true);
+  assert('场景C 云函数失败仍 resolve(不卡在登录)', !!userC);
+  assert('场景C 降级为 guest', userC.isGuest === true);
+
+  // 场景 D:wx.login 成功但未返回 code
+  wxLoginReturnsCode = false;
+  storage.setUserInfo(null);
+  const userD = await auth.ensureLogin(true);
+  assert('场景D 未返回 code 仍 resolve', !!userD);
+  assert('场景D 降级为 guest', userD.isGuest === true);
+
+  // 复位到场景 A 的 guest 状态,供后续用例基于该状态断言
+  cloudEnabled = false;
+  wxLoginReturnsCode = true;
+  storage.setUserInfo(null);
+  await auth.ensureLogin(true);
 
   console.log('\n[2] guest 身份稳定性');
   const again = await auth.ensureLogin();
