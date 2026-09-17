@@ -122,6 +122,13 @@ function doLogin() {
  * 确保已登录(幂等 + 并发去重)
  * 已有有效用户则直接返回,不重复调用 wx.login(避免触发频率限制)
  *
+ * 缓存策略:
+ *   - 真实用户(非 guest) → 复用缓存,不重登
+ *   - guest(降级产物)   → 复用缓存返回(不阻塞 UI),
+ *                          但若云已就绪则后台异步触发升级登录
+ *                          (云就绪后用户无需重启即可自动转真实用户,
+ *                           fireLoginHooks 会触发 sync.fullSync 补传积压队列)
+ *
  * @param {Boolean} force 是否强制刷新登录态
  * @returns {Promise<Object>} user,永不 reject
  */
@@ -129,10 +136,30 @@ function ensureLogin(force) {
   if (!force) {
     const cached = storage.getUserInfo();
     if (cached && cached.id) {
+      // guest 是降级产物:云就绪时后台异步升级,不阻塞当前返回
+      // 关键修复:之前缓存命中即返回,导致「云函数部署好后用户永远是 guest」
+      if (cached.isGuest && isCloudEnabled()) {
+        refreshLoginSilently();
+      }
       return Promise.resolve(cached);
     }
   }
 
+  if (loginPromise) return loginPromise;
+
+  loginPromise = doLogin().then(function (result) {
+    loginPromise = null;
+    return result.user;
+  });
+
+  return loginPromise;
+}
+
+/**
+ * 后台静默升级:guest → 真实用户
+ * 不阻塞调用方;成功后 fireLoginHooks 触发 sync.fullSync 补传积压队列
+ */
+function refreshLoginSilently() {
   if (loginPromise) return loginPromise;
 
   loginPromise = doLogin().then(function (result) {
@@ -169,5 +196,6 @@ module.exports = {
   isRealUser,
   onLoginSuccess,
   logout,
-  buildGuestUser
+  buildGuestUser,
+  refreshLoginSilently
 };

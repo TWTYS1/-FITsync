@@ -138,6 +138,37 @@ async function run() {
   assert('二次调用直接返回缓存,不重复登录', again.id === user.id);
   assert('getOrCreateLocalGuestId 幂等', storage.getOrCreateLocalGuestId() === storage.getOrCreateLocalGuestId());
 
+  console.log('\n[2.5] guest 缓存 + 云就绪:后台异步升级(回归 2026-09-17 上线阻塞 bug)');
+  // 复现:之前云函数未部署时,首次启动降级为 guest 写入 storage。
+  // 之后云函数部署好,但 ensureLogin 缓存命中即返回,永不重试 → 永远 guest → 同步永远跳过。
+  // 修复:guest 缓存 + isCloudEnabled=true 时,后台异步 refreshLoginSilently 升级。
+  cloudEnabled = true;
+  cloudCallShouldFail = false;   // 云函数能成功返回 openid
+  const cachedGuest = storage.getUserInfo();
+  assert('前置:storage 当前是 guest', cachedGuest && cachedGuest.isGuest === true);
+
+  const beforeCount = wxLoginCallCount;
+  const u = await auth.ensureLogin();  // 不 force
+  assert('立即返回缓存 guest(不阻塞 UI)', u && u.id === cachedGuest.id && u.isGuest === true);
+  assert('后台触发 wx.login 升级', wxLoginCallCount > beforeCount);
+
+  // 等待 doLogin 异步完成
+  await new Promise(function (r) { setTimeout(r, 50); });
+  const upgraded = storage.getUserInfo();
+  assert('storage 已升级为真实用户(openid 非空)', upgraded && !upgraded.isGuest && upgraded.openid === 'mock-openid');
+  assert('isRealUser 升级后返回 true', auth.isRealUser() === true);
+
+  // 升级后再次调用:已是真实用户,不应再触发 wx.login
+  const beforeCount2 = wxLoginCallCount;
+  const u2 = await auth.ensureLogin();
+  assert('升级后真实用户复用缓存,不再重登', u2 && u2.openid === 'mock-openid' && wxLoginCallCount === beforeCount2);
+
+  // 复位到 guest 状态,供后续用例使用
+  cloudEnabled = false;
+  cloudCallShouldFail = true;
+  storage.setUserInfo(null);
+  await auth.ensureLogin(true);
+
   console.log('\n[3] 登录成功回调注册');
   let hookFired = false;
   auth.onLoginSuccess(function () { hookFired = true; });
