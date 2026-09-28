@@ -294,6 +294,12 @@
         >
           <text>{{item}}s</text>
         </view>
+        <view
+          class="rest-option rest-option-custom {{customRestActive ? 'rest-option-active' : ''}}"
+          bindtap="onCustomRestTap"
+        >
+          <text>{{customRestLabel}}</text>
+        </view>
       </view>
     </view>
 

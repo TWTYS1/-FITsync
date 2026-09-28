@@ -938,6 +938,16 @@
   font-weight: 600;
 }
 
+/* 自定义休息时间格:未选中时虚线边框提示可输入 */
+.rest-option-custom {
+  border: 2rpx dashed var(--border);
+}
+
+.rest-option-custom.rest-option-active {
+  border-style: solid;
+  border-color: var(--accent);
+}
+
 .btn-confirm {
   width: 100%;
   height: 96rpx;

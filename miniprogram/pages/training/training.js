@@ -91,6 +91,8 @@ Page({
     restFinishedHint: false,
     restDurationSeconds: DEFAULT_REST_DURATION_SECONDS,
     restDurationOptions: [60, 90, 120, 180, 300],
+    customRestLabel: '+ 自定义',
+    customRestActive: false,
 
     // Lightweight prompts
     undoToast: null,
@@ -245,6 +247,7 @@ Page({
       startRestDurationSeconds: this.data.restDurationSeconds,
       saveAsDefault: false
     });
+    this.syncCustomRestState();
   },
 
   onTapFrequent(e) {
@@ -348,6 +351,42 @@ Page({
   onSelectRestOption(e) {
     const { seconds } = e.currentTarget.dataset;
     this.setData({ startRestDurationSeconds: Number(seconds) });
+    this.syncCustomRestState();
+  },
+
+  /* 自定义休息时间:预设档位之外的值(15~600s),弹原生输入框 */
+  onCustomRestTap() {
+    const isPreset = this.data.restDurationOptions.indexOf(this.data.startRestDurationSeconds) !== -1;
+    wx.showModal({
+      title: '自定义休息时间',
+      editable: true,
+      placeholderText: '输入 15 ~ 600 秒',
+      content: isPreset ? '' : String(this.data.startRestDurationSeconds),
+      success: (res) => {
+        if (!res.confirm) return;
+        const parsed = Number.parseInt(res.content, 10);
+        if (!Number.isFinite(parsed)) {
+          wx.showToast({ title: '请输入 15 ~ 600 之间的秒数', icon: 'none' });
+          return;
+        }
+        const clamped = Math.min(600, Math.max(15, Math.round(parsed)));
+        if (clamped !== parsed) {
+          wx.showToast({ title: '已调整为 ' + clamped + ' 秒', icon: 'none' });
+        }
+        this.setData({ startRestDurationSeconds: clamped });
+        this.syncCustomRestState();
+      }
+    });
+  },
+
+  /* 同步自定义格的显示态:选中预设 → "+ 自定义";选中自定义值 → "75s" 高亮 */
+  syncCustomRestState() {
+    const seconds = this.data.startRestDurationSeconds;
+    const isPreset = this.data.restDurationOptions.indexOf(seconds) !== -1;
+    this.setData({
+      customRestLabel: isPreset ? '+ 自定义' : seconds + 's',
+      customRestActive: !isPreset
+    });
   },
 
   onStartTraining() {
