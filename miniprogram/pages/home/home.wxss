@@ -1,5 +1,10 @@
+page {
+  height: 100%;
+}
+
 .container {
-  min-height: 100vh;
+  min-height: 100%;
+  box-sizing: border-box;
   padding: 40rpx 28rpx;
   display: flex;
   flex-direction: column;
@@ -134,12 +139,13 @@
 
 .feedback-btn {
   background: transparent;
-  border: none;
-  padding: 12rpx 32rpx;
+  border: 2rpx solid var(--border);
+  border-radius: 999rpx;
+  padding: 16rpx 56rpx;
   margin: 0;
   line-height: 1.4;
-  font-size: 24rpx;
-  color: var(--muted);
+  font-size: 26rpx;
+  color: #a3a3a3;
 }
 
 .feedback-btn::after {
