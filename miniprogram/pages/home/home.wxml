@@ -43,4 +43,9 @@
     <text class="section-title text-muted">今天还没有训练记录</text>
     <text class="section-desc">点击上方按钮开始第一次训练</text>
   </view>
+
+  <!-- Feedback (customer service session) -->
+  <view class="footer">
+    <button class="feedback-btn" open-type="contact">反馈建议</button>
+  </view>
 </view>
