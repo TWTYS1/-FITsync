@@ -56,7 +56,7 @@ function pushLocal(level, payload) {
  * info 级别的日志仅输出到控制台/本地日志,不进实时日志(避免噪音)
  */
 function info(tag, detail) {
-  const line = '[组间歇PRO][INFO] ' + tag + (detail !== undefined ? ' | ' + safeStringify(detail) : '');
+  const line = '[组间记PRO][INFO] ' + tag + (detail !== undefined ? ' | ' + safeStringify(detail) : '');
   try {
     const logger = getNormalLog();
     if (logger) logger.info(line);
@@ -65,7 +65,7 @@ function info(tag, detail) {
 }
 
 function warn(tag, detail) {
-  const line = '[组间歇PRO][WARN] ' + tag + (detail !== undefined ? ' | ' + safeStringify(detail) : '');
+  const line = '[组间记PRO][WARN] ' + tag + (detail !== undefined ? ' | ' + safeStringify(detail) : '');
   try {
     const logger = getNormalLog();
     if (logger) logger.warn(line);
@@ -76,7 +76,7 @@ function warn(tag, detail) {
 }
 
 function error(tag, detail) {
-  const line = '[组间歇PRO][ERROR] ' + tag + (detail !== undefined ? ' | ' + safeStringify(detail) : '');
+  const line = '[组间记PRO][ERROR] ' + tag + (detail !== undefined ? ' | ' + safeStringify(detail) : '');
   try {
     const logger = getNormalLog();
     if (logger) logger.error(line);

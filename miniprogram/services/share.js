@@ -14,7 +14,7 @@
  */
 function buildHomeShare(extraQuery) {
   return {
-    title: '组间歇PRO — 一次点击完成训练记录',
+    title: '组间记PRO — 一次点击完成训练记录',
     path: '/pages/home/home' + buildQuery({ from: 'share' }, extraQuery)
   };
 }
@@ -88,7 +88,7 @@ function buildDailySummaryShare(summary) {
  */
 function buildRecordsShare() {
   return {
-    title: '我的力量训练记录都在「组间歇PRO」',
+    title: '我的力量训练记录都在「组间记PRO」',
     path: '/pages/home/home' + buildQuery({ from: 'share', scene: 'records' })
   };
 }

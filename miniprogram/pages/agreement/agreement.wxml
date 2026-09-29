@@ -32,7 +32,7 @@
       >{{para}}</view>
     </view>
 
-    <view class="tail">— 组间歇PRO团队 —</view>
+    <view class="tail">— 组间记PRO团队 —</view>
     <view class="bottom-space"></view>
   </scroll-view>
 
